@@ -1,0 +1,16 @@
+Source: zk-flock
+Section: misc
+Priority: extra
+Maintainer: Anton Tyurin <noxiouz@yandex.ru>
+Build-Depends: cdbs (>= 0.4.49), debhelper (>= 7.0.13), python (>= 2.6), python-support, python-central
+Standards-Version: 3.8.3
+Homepage: https://github.com/noxiouz/python-flock
+
+Package: zk-flock
+Architecture: all
+Depends: 
+ ${shlibs:Depends},
+ ${misc:Depends},
+ python-zookeeper
+Description: Distributed flock
+ Distributed flock based on Zookeeper
