@@ -26,3 +26,8 @@ If your application requires command-line arguments enclose it in double quotes:
 ```bash
 zk-flock my_test_lock "bash /home/user/test.sh arg1 arg2 arg3"
 ```
+
+Warning
+=======
+
+If you kill zk-flock application with **kill -9**, the lock will be released, but this will not stop your application.
