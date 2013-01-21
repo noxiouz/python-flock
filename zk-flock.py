@@ -7,16 +7,9 @@ import sys
 import os
 import time
 import atexit
+import json
 
 from signal import SIGTERM
-
-cfg = {
-		"type"      :   "Zookeeper",
-		"host"      :   ["cocaine-log01g.kit.yandex.net:2181","cocaine-log02f.kit.yandex.net:2181","cocaine-mongo03f.kit.yandex.net:2181"],
-		"timeout"   :   5,
-        "app_id"    :   "CMN",
-        "name"      :   "TEST_LOCK"
-}
 
 #========================================================================================
 
@@ -146,7 +139,7 @@ def start_child(cmd):
 def kill_child(prcs):
     prcs.kill()
 
-def main(cmd_arg):
+def main(cmd_arg, zk_cfg):
     z = ZK.ZKLockServer(**cfg)
     if not z.getlock():
         print "Error"
@@ -166,12 +159,26 @@ def main(cmd_arg):
             except Exception as err:
                 print str(err)
 
+def read_cfg():
+    try:
+        cfg = json.load(open('/etc/distributed-flock.json'))
+    except Exception as err:
+        print "Config error %s" % str(err)
+        return None
+    else:
+        return cfg
 #===============================================
 
 if __name__ == "__main__":
-    daemon = Daemon("TEST_PID")
-    daemon.run = main
-    if len(sys.argv) == 2:
-        daemon.start(sys.argv[1])
+    if len(sys.argv) == 3:
+        pid_name = sys.argv[1]
+        cmd_arg = sys.argv[2]
     else:
-        sys.exit(0)
+        sys.exit(1)
+    daemon = Daemon(pid_name)
+    daemon.run = main
+    cfg = read_cfg()
+    if cfg is None:
+        sys.exit(1)
+    cfg['name'] = pid_name
+    daemon.start(cmd_arg, cfg)
