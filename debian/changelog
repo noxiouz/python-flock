@@ -1,5 +1,17 @@
+zk-flock (0.1-beta2) lucid; urgency=low
+
+  * fix of while. Clean unused part of daemon.  Add 1sec timeout
+
+ -- Anton Tyurin <noxiouz@yandex-team.ru>  Fri, 25 Jan 2013 22:35:43 +0400
+
+zk-flock (0.1-beta1) lucid; urgency=low
+
+  * aisohf 
+
+ -- Anton Tyurin <noxiouz@yandex-team.ru>  Tue, 22 Jan 2013 17:08:02 +0400
+
 zk-flock (0.1) unstable; urgency=low
 
   * Initial Release.
 
- -- Anton Tyurin <noxiouz@yandex-team.ru>  Mon, 21 Jan 2013 14:09:39 +0400
+ -- Anton Tyurin <noxiouz@yandex-team.net>  Tue, 22 Jan 2013 17:05:45 +0400

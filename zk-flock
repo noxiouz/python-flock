@@ -53,71 +53,13 @@ class Daemon(object):
         os.dup2(so.fileno(), sys.stdout.fileno())
         os.dup2(se.fileno(), sys.stderr.fileno())
 
-        #write PID file
-        atexit.register(self.delpid)
-        pid = str(os.getpid())
-        file(self.pidfile,'w').write("%s\n" % pid)
-
-    def delpid(self):
-        try:
-            os.remove(self.pidfile)
-        except Exception, err:
-            pass
-
     def start(self, *args):
         """
         Start  the daemon
         """
 
-        try:
-            pf = file(self.pidfile, 'r')
-            pid = int(pf.read().strip())
-            pf.close()
-        except IOError:
-            pid = None
-
-        if pid:
-            msg = "pidfile %s has been already existed. Exit.\n"
-            sys.stderr.write(msg % self.pidfile)
-            sys.exit(1)
-
         self.daemonize()
         self.run(*args)
-
-    def stop(self):
-        """
-        Stop daemon.
-        """
-        try:
-            pf = file(self.pidfile, 'r')
-            pid = int(pf.read().strip())
-            pf.close()
-        except IOError:
-            pid = None
-
-        if not pid:
-            msg = "pidfile %s doesnot exist. Exit.\n"
-            sys.stderr.write(msg % self.pidfile)
-            sys.exit(1)
-
-        #Kill
-        try:
-            while True:
-                os.kill(pid, SIGTERM)
-                time.sleep(0.5)
-        except OSError, err:
-            err = str(err)
-            if err.find("No such process") > 0:
-                if os.path.exists(self.pidfile):
-                    os.remove(self.pidfile)
-            else:
-                print str(err)
-                sys.exit(1)
-
-
-    def restart(self, *args):
-        self.stop()
-        self.start(*args)
 
     def run(self, *args):
         pass
