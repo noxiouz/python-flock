@@ -8,6 +8,7 @@ import os
 import time
 import atexit
 import json
+import optparse
 
 from signal import SIGTERM
 
@@ -15,11 +16,10 @@ from signal import SIGTERM
 
 class Daemon(object):
 
-    def __init__(self, pidfile, stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'):
+    def __init__(self, stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'):
         self.stdin = stdin
         self.stdout = stdout
         self.stderr = stderr
-        self.pidfile = pidfile
 
     def daemonize(self):
         """Double-fork magic"""
@@ -102,26 +102,45 @@ def main(cmd_arg, zk_cfg):
                 print str(err)
         time.sleep(1)
 
-def read_cfg():
+def read_cfg(path):
     try:
-        cfg = json.load(open('/etc/distributed-flock.json'))
+        with open(path) as f:
+            cfg = json.load(f)
+            cfg['host']
+            cfg['app_id']
+            cfg['timeout']
+    except KeyError as err:
+        print "Missing parametr %s" % str(err)
     except Exception as err:
         print "Config error %s" % str(err)
         return None
     else:
         return cfg
 #===============================================
+#===============================================
 
 if __name__ == "__main__":
-    if len(sys.argv) == 3:
-        pid_name = sys.argv[1]
-        cmd_arg = sys.argv[2]
+    usage = "Usage: %prog LOCKNAME COMMAND [-cdh]"
+    parser = optparse.OptionParser(usage)
+    parser.add_option("-d", "--daemonize", action="store_true",dest="isdaemonize", default=False, help="Daemonize this")
+    parser.add_option("-c", "--confpath", action="store", dest="confpath", default="/etc/distributed-flock.json",\
+                                                        help="Configuration file. default: /etc/distributed-flock.json")
+    (options, args) = parser.parse_args()
+    if len(args) == 2:
+        pid_name = args[0]
+        cmd_arg = args[1]
     else:
+        print "Wrong count of arguments"
+        parser.print_help()
         sys.exit(1)
-    daemon = Daemon(pid_name)
-    daemon.run = main
-    cfg = read_cfg()
+    cfg = read_cfg(options.confpath)
     if cfg is None:
+        print "Unable to read configuration file: %s" % options.confpath
         sys.exit(1)
     cfg['name'] = pid_name
-    daemon.start(cmd_arg, cfg)
+    if options.isdaemonize:
+        daemon = Daemon()
+        daemon.run = main
+        daemon.start(cmd_arg, cfg)
+    else:
+        main(cmd_arg, cfg)

@@ -1,3 +1,9 @@
+zk-flock (0.1-beta3) lucid; urgency=low
+
+  * add daemonize and configpath options 
+
+ -- Anton Tyurin <noxiouz@yandex-team.ru>  Thu, 31 Jan 2013 00:44:15 +0400
+
 zk-flock (0.1-beta2) lucid; urgency=low
 
   * fix of while. Clean unused part of daemon.  Add 1sec timeout
