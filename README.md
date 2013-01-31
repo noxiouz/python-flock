@@ -27,6 +27,8 @@ If your application requires command-line arguments enclose it in double quotes:
 zk-flock my_test_lock "bash /home/user/test.sh arg1 arg2 arg3"
 ```
 
+Add key **-d** or **--daemonize** to starts this appliction as daemon.
+
 Warning
 =======
 
