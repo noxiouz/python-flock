@@ -99,6 +99,11 @@ def read_cfg(path):
     else:
         return cfg
 
+def get_la():
+    with open('/proc/loadavg') as loadavg:
+        load_last_min = loadavg.readline().split()[0]
+        return float(load_last_min)
+
 def main(cmd_arg, zk_cfg):
 
     z = ZK.ZKLockServer(**cfg)
@@ -134,11 +139,19 @@ def main(cmd_arg, zk_cfg):
 #===============================================
 
 if __name__ == "__main__":
-    usage = "Usage: %prog LOCKNAME COMMAND [-cdh]"
+    usage = "Usage: %prog LOCKNAME COMMAND [-cdhs]"
     parser = optparse.OptionParser(usage)
-    parser.add_option("-d", "--daemonize", action="store_true",dest="isdaemonize", default=False, help="Daemonize this")
+
     parser.add_option("-c", "--confpath", action="store", dest="confpath", default="/etc/distributed-flock.json",\
                                                         help="Configuration file. default: /etc/distributed-flock.json")
+
+    parser.add_option("-d", "--daemonize", action="store_true", dest="isdaemonize", default=False, help="Daemonize this")
+
+    parser.add_option("-m", "--maxla", action="store", dest="maxla", default=-1,\
+                                                        help="Maximum load average to start working. Default: -1")
+
+    parser.add_option("-s", "--sleep", action="store_true", dest="want_to_sleep", default=False, help="Yes, I want to sleep before work")
+
     (options, args) = parser.parse_args()
     if len(args) == 2:
         pid_name = args[0]
@@ -147,11 +160,23 @@ if __name__ == "__main__":
         print "Wrong count of arguments"
         parser.print_help()
         sys.exit(1)
+
     cfg = read_cfg(options.confpath)
     if cfg is None:
         print "Unable to read configuration file: %s" % options.confpath
         sys.exit(1)
+
     cfg['name'] = pid_name
+    want_to_sleep = cfg.get("sleep", "ON" if options.want_to_sleep else "OFF")
+    if want_to_sleep not in ("ON", "OFF"):
+        print "Available values for sleep are ON/OFF, not a %s " % want_to_sleep
+        sys.exit(1)
+    maxla = cfg.get("maxla", options.maxla)
+    if (maxla > 0) and (maxla <= get_la()):
+        print "Too much load averaga. Max la: %f, Current la: %f" % (maxla, get_la())
+        sys.exit(0)
+    if want_to_sleep == "ON":
+        time.sleep(get_la())
     if options.isdaemonize:
         daemon = Daemon()
         daemon.run = main

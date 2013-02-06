@@ -7,12 +7,16 @@ You have to write the configuration file **/etc/distributed-flock.json** with th
     "host"      :   ["hostname1:2181","hostname2:2181","hostname3:2181"],
     "timeout"   :   5,
     "app_id"    :   "my_application_namespace"
+    "sleep"     :   "ON"    //ON or OFF - Default OFF
+    "maxla"     :   30      // If >=0 -> max loadaverage for work. Default -1
 }
 ```
  * **host** - list of Zookeeper nodes
  * **timeout** - timeout for zookeper connection (sec)
  * **app_id** - namespace for your application in Zookeeper. This means that the lock will be stored  
                 in Zookeeper with path likes */app_id/your_lock_name*
+ * **sleep** - Sleep before work. Default: "OFF"
+ * **maxla** - Maximal load average. Use if >=0. Default: -1
 
 Usage
 =====
