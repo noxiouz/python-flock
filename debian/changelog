@@ -1,3 +1,9 @@
+zk-flock (0.1-beta4) lucid; urgency=low
+
+  * Add handling for SIGTERM and SIGCHLD. Remove process.poll() for check alive 
+
+ -- Anton Tyurin <noxiouz@yandex-team.ru>  Thu, 07 Feb 2013 02:13:35 +0400
+
 zk-flock (0.1-beta3) lucid; urgency=low
 
   * add daemonize and configpath options 

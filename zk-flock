@@ -10,7 +10,7 @@ import atexit
 import json
 import optparse
 
-from signal import SIGTERM
+import signal
 
 #========================================================================================
 
@@ -79,28 +79,10 @@ def start_child(cmd):
         return p
 
 def kill_child(prcs):
-    prcs.kill()
-
-def main(cmd_arg, zk_cfg):
-    z = ZK.ZKLockServer(**cfg)
-    if not z.getlock():
-        print "Error"
-        return
-    p = start_child(cmd_arg)
-    while True:
-        if p.poll() is not None:
-            z.releaselock()
-            z.destroy()
-            return 
-        if not z.checkLock():
-            try:
-                kill_child(p)
-                if p.poll() is not None:
-                    p.terminate()
-                z.destroy()
-            except Exception as err:
-                print str(err)
-        time.sleep(1)
+    if prcs.poll() is None:
+        prcs.terminate()
+    if prcs.poll() is None:
+        prcs.kill()
 
 def read_cfg(path):
     try:
@@ -116,6 +98,38 @@ def read_cfg(path):
         return None
     else:
         return cfg
+
+def main(cmd_arg, zk_cfg):
+
+    z = ZK.ZKLockServer(**cfg)
+    if not z.getlock():
+        print "Error"
+        return
+
+    def sigterm_and_sigchld_handle(signum, frame):
+        print "Handle signal %d. Kill child"  % signum
+        try:
+            z.releaselock()
+        except Exception as err:
+            print str(err)
+        finally:
+            kill_child(p)
+            sys.exit(1)
+
+    p = start_child(cmd_arg)
+    signal.signal(signal.SIGTERM, sigterm_and_sigchld_handle)
+    signal.signal(signal.SIGCHLD, sigterm_and_sigchld_handle)
+    while True:
+        if not z.checkLock():
+            try:
+                kill_child(p)
+                z.destroy()
+            except Exception as err:
+                print str(err)
+            finally:
+                return
+        time.sleep(1)
+
 #===============================================
 #===============================================
 
