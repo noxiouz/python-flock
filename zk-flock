@@ -12,6 +12,7 @@ import optparse
 import logging
 
 import signal
+from threading import Condition
 
 #========================================================================================
 
@@ -116,6 +117,8 @@ def main(cmd_arg, zk_cfg):
         print "Error"
         return
 
+
+    cv = Condition()
     def sigterm_and_sigchld_handle(signum, frame):
         print "Handle signal %d. Kill child"  % signum
         try:
@@ -126,10 +129,22 @@ def main(cmd_arg, zk_cfg):
             kill_child(p)
             sys.exit(1)
 
+    def watcher_cb():
+        print "Lock state have been changed!"
+        cv.acquire()
+        cv.notify()
+        cv.release()
+
+    if not z.set_async_checkLock(watcher_cb):
+        return
+
     p = start_child(cmd_arg)
     signal.signal(signal.SIGTERM, sigterm_and_sigchld_handle)
     signal.signal(signal.SIGCHLD, sigterm_and_sigchld_handle)
     while True:
+        cv.acquire()
+        cv.wait(100)
+        cv.release()
         if not z.checkLock():
             try:
                 kill_child(p)
@@ -138,7 +153,7 @@ def main(cmd_arg, zk_cfg):
                 print str(err)
             finally:
                 return
-        time.sleep(1)
+        print "Period"
 
 #===============================================
 #===============================================

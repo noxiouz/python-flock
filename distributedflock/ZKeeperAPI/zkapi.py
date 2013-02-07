@@ -21,6 +21,8 @@
 import zookeeper
 import threading
 
+from functools import partial
+
 ZK_ACL = {"perms":0x1f, "scheme":"world", "id":"anyone"}
 
 ZK_NODE_EXISTS=-2;
@@ -91,9 +93,6 @@ class ZKeeperClient():
                 self.cv.release()
             if self.connected:
                 break
-        if not self.connected:
-            #print 'Cannot connect to '+' '.join(self.zkhosts)
-            pass
         return self.connected
 
     def disconnect(self):
@@ -120,3 +119,17 @@ class ZKeeperClient():
 
     def delete(self, absname):
         return handling_error(zookeeper.delete)(self.zkhandle, absname)[1]
+#========================
+    def aget(self, node, callback):
+        if not callable(callback):
+            return None
+        def watcher(self, zh, event, state, path):
+            callback()
+        return zookeeper.aget(self.zkhandle, node, partial(watcher, self), self.handler) 
+
+    def handler(self, zh, rc, data, stat):
+        if zookeeper.OK == rc:
+            print "WORK"
+        else:
+           if zookeeper.NONODE == rc:
+               print "No node"

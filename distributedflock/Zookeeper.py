@@ -25,13 +25,6 @@ import uuid
 
 import logging
 
-
-
-class losingLockExc(Exception):
-    def __str__(self):
-        return "Lock is not mine"
-
-
 class ZKLockServer():
     """Zookeeper based lockserver. """
     def __init__(self, **config):
@@ -87,6 +80,14 @@ class ZKLockServer():
             return False
         else:
             return True#isMyLock
+
+    def set_async_checkLock(self, callback):
+        if not self.locked:
+            return False
+        if not callable(callback):
+            return False
+        if self.zkclient.aget(self.lockpath, callback) == 0:
+            return True
 
     def destroy(self):
         if self.zkclient.disconnect() == 0:
