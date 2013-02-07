@@ -1,3 +1,9 @@
+zk-flock (0.1-beta5) lucid; urgency=low
+
+  * Async lock check 
+
+ -- Anton Tyurin <noxiouz@yandex-team.ru>  Fri, 08 Feb 2013 01:24:06 +0400
+
 zk-flock (0.1-beta4) lucid; urgency=low
 
   * Add handling for SIGTERM and SIGCHLD. Remove process.poll() for check alive 
