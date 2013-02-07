@@ -9,6 +9,7 @@ import time
 import atexit
 import json
 import optparse
+import logging
 
 import signal
 
@@ -63,6 +64,10 @@ class Daemon(object):
 
     def run(self, *args):
         pass
+
+#===========================================================
+#   NULL logger
+#===========================================================
 
 #===========================================================
 

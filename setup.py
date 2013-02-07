@@ -20,5 +20,6 @@ setup(
         ],
         requires = [
             "zookeeper"
-        ]
+        ],
+        test_suite="tests"
 )
