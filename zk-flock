@@ -146,6 +146,7 @@ def main(cmd_arg, zk_cfg):
         cv.wait(100)
         cv.release()
         if not z.checkLock():
+            print "dsds"
             try:
                 kill_child(p)
                 z.destroy()

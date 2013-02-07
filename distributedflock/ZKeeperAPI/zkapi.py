@@ -125,7 +125,7 @@ class ZKeeperClient():
             return None
         def watcher(self, zh, event, state, path):
             callback()
-        return zookeeper.aget(self.zkhandle, node, partial(watcher, self), self.handler) 
+        return zookeeper.aget(self.zkhandle, node, partial(watcher, self), self.handler)
 
     def handler(self, zh, rc, data, stat):
         if zookeeper.OK == rc:

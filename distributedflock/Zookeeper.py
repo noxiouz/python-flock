@@ -86,7 +86,11 @@ class ZKLockServer():
             return False
         if not callable(callback):
             return False
-        if self.zkclient.aget(self.lockpath, callback) == 0:
+        def callback_wrapper():
+            callback()
+            self.zkclient.aget(self.lockpath, callback_wrapper)
+
+        if self.zkclient.aget(self.lockpath, callback_wrapper) == 0:
             return True
 
     def destroy(self):
