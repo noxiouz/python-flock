@@ -114,23 +114,23 @@ def main(cmd_arg, zk_cfg):
 
     z = ZK.ZKLockServer(**cfg)
     if not z.getlock():
-        print "Error"
         return
 
 
     cv = Condition()
     def sigterm_and_sigchld_handle(signum, frame):
-        print "Handle signal %d. Kill child"  % signum
+        #print "Handle signal %d. Kill child"  % signum
         try:
             z.releaselock()
         except Exception as err:
-            print str(err)
+            #print str(err)
+            pass
         finally:
             kill_child(p)
             sys.exit(1)
 
     def watcher_cb():
-        print "Lock state have been changed!"
+        #print "Lock state have been changed!"
         cv.acquire()
         cv.notify()
         cv.release()
@@ -146,15 +146,13 @@ def main(cmd_arg, zk_cfg):
         cv.wait(100)
         cv.release()
         if not z.checkLock():
-            print "dsds"
             try:
                 kill_child(p)
                 z.destroy()
             except Exception as err:
-                print str(err)
+                pass
             finally:
                 return
-        print "Period"
 
 #===============================================
 #===============================================

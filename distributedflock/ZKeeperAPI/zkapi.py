@@ -62,7 +62,7 @@ def handling_error(zkfunc):
 class ZKeeperClient():
     def __init__(self, **config):
         try:
-            self.connection_timeout =5#config['timeout']
+            self.connection_timeout = config['timeout']
             self.zkhosts = config['host']
         except Exception, errmsg:
             #print "Cannot init: "+str(errmsg)
