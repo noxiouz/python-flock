@@ -186,6 +186,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     cfg['name'] = pid_name
+    cfg['zookeeperlog'] = "/tmp/ZK.log"
     want_to_sleep = cfg.get("sleep", "ON" if options.want_to_sleep else "OFF")
     if want_to_sleep not in ("ON", "OFF"):
         print "Available values for sleep are ON/OFF, not a %s " % want_to_sleep

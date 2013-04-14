@@ -28,7 +28,8 @@ ZK_ACL = {"perms":0x1f, "scheme":"world", "id":"anyone"}
 ZK_NODE_EXISTS=-2;
 
 
-zookeeper.set_log_stream( open('/dev/null','w'))
+#zookeeper.set_debug_level(zookeeper.LOG_LEVEL_DEBUG)
+zookeeper.set_log_stream(open('/dev/null','w'))
 
 def handling_error(zkfunc):
     def wrapper(*args, **kwargs):
@@ -41,8 +42,6 @@ def handling_error(zkfunc):
         except zookeeper.NodeExistsException, err:
             #print str(err)
             errno = ZK_NODE_EXISTS
-        #except zookeeper.NoNodeExistsException, err:
-        #    print 'dsdsds' + str(err)
         except zookeeper.MarshallingErrorException, err:
             #print err
             pass
@@ -61,12 +60,21 @@ def handling_error(zkfunc):
 
 class ZKeeperClient():
     def __init__(self, **config):
+        zklogfile_path = config.get("zookeeperlog", "/dev/stderr")
+        try:
+            _f = open(zklogfile_path,'a')
+        except Exception as err:
+            print err
+        else:
+            zookeeper.set_log_stream(_f)
+
         try:
             self.connection_timeout = config['timeout']
             self.zkhosts = config['host']
-        except Exception, errmsg:
-            #print "Cannot init: "+str(errmsg)
+        except KeyError as err:
+            print "Cannot init: "+str(err)
             pass
+
         self.connected = False
         self.zkhandle = None
         self.connect()
@@ -85,7 +93,7 @@ class ZKeeperClient():
             self.cv.acquire()
             try:
                 self.zkhandle = handling_error(zookeeper.init)(zkserver, connect_watcher)[0]
-            except Exception, err:
+            except Exception as err:
                 pass
             else:
                 self.cv.wait(self.connection_timeout)
