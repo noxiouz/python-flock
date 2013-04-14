@@ -1,3 +1,9 @@
+zk-flock (0.1-beta8) lucid; urgency=low
+
+  * default logging to /dev/null 
+
+ -- Anton Tyurin <noxiouz@yandex-team.ru>  Mon, 15 Apr 2013 00:49:21 +0400
+
 zk-flock (0.1-beta7) lucid; urgency=low
 
   * now reconnects to another zk-server if currently server is down (EXPERIMENTAL)

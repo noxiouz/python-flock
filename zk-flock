@@ -132,7 +132,8 @@ def read_cfg(path):
                                             logger_config.get('zklevel', DEFAULT_ZOOKEEPER_LOG_LEVEL))
             cfg['level'] = logger_config.get('level', DEFAULT_LOG_LEVEL)
             cfg['logger_name'] = 'zk-flock'
-            cfg.pop('logger')
+            if cfg.has_key('logger'):
+                cfg.pop('logger')
     except KeyError as err:
         print "Missing parametr %s" % str(err)
     except Exception as err:

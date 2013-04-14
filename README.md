@@ -8,7 +8,7 @@ You have to write the configuration file **/etc/distributed-flock.json** with th
     "timeout"   :   5,
     "app_id"    :   "my_application_namespace",
     "sleep"     :   "ON",    //ON or OFF - Default OFF
-    "maxla"     :   30      // If >=0 -> max loadaverage for work. Default -1
+    "maxla"     :   30,      // If >=0 -> max loadaverage for work. Default -1
     "logger"    :   {
             "path"      :   "/tmp/zkflock.log",
             "level"     :   "INFO",        
