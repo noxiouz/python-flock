@@ -29,30 +29,30 @@ class ZKLockServer():
     """Zookeeper based lockserver. """
     def __init__(self, **config):
         try:
-            self.log = logging.getLogger('combaine').info
+            self.log = logging.getLogger(config.get('logger_name','combaine'))
             self.zkclient = ZK.ZKeeperClient(**config)
             self.id = config['app_id']
             res = self.zkclient.write('/'+self.id,"Rootnode")
             if (res != ZK.ZK_NODE_EXISTS ) and (res < 0):
-                self.log( 'WARN!!!','Cannot init ZK lock server')
+                self.log.warning('Cannot init ZK lock server')
                 raise Exception
             self.lock = config['name']
             self.lockpath = '/'+self.id+'/'+self.lock
             self.locked = False
             self.lock_content = gethostname() + str(uuid.uuid4())
-        except Exception, err:
-            self.log('CRIT', 'Failed to init ZKLockServer: '+str(err))
+        except Exception as err:
+            self.log.error('Failed to init ZKLockServer: '+str(err))
             raise
         else:
-            self.log('INFO','ZK create')
+            self.log.debug('ZK create')
 
     def getlock(self):
         if self.zkclient.write(self.lockpath, self.lock_content,1) == 0:
-            self.log('INFO', 'lock good')
+            self.log.info('Lock: success')
             self.locked = True
             return True
         else:
-            self.log('ERROR', 'lock fail')
+            self.log.info('Lock: fail')
             return False
 
     def setLockName(self, name):
@@ -61,11 +61,11 @@ class ZKLockServer():
 
     def releaselock(self):
         if self.zkclient.delete(self.lockpath) ==0:
-            self.log('INFO','Success unlock')
+            self.log.info('Unlock: success')
             self.locked = False
             return True
         else:
-            self.log('ERROR', 'Fail unlock')
+            self.log.debug('Unlock: fail')
             return False
 
     def checkLock(self):
@@ -75,8 +75,8 @@ class ZKLockServer():
                 return False
             else:
                 return True
-        except Exception, err:
-            self.log('ERROR', 'lock isnot mine')
+        except Exception as err:
+            self.log.debug("lock isn't mine")
             return False
         else:
             return True#isMyLock
@@ -96,8 +96,8 @@ class ZKLockServer():
 
     def destroy(self):
         if self.zkclient.disconnect() == 0:
-            self.log('INFO','Successfully disconnect from LS')
+            self.log.info('Successfully disconnect from LS')
             return True
         else:
-            self.log('ERROR','Cannot disconnect from LS')
+            self.log.debug('Cannot disconnect from LS')
             return False

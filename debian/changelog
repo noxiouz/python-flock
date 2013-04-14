@@ -1,3 +1,10 @@
+zk-flock (0.1-beta7) lucid; urgency=low
+
+  * now reconnects to another zk-server if currently server is down (EXPERIMENTAL)
+  * add logging (ZooClient and zk-flock)
+
+ -- Anton Tyurin <noxiouz@yandex-team.ru>  Mon, 15 Apr 2013 00:18:15 +0400
+
 zk-flock (0.1-beta6) lucid; urgency=low
 
   * supress some prints 

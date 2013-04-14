@@ -1,18 +1,46 @@
-#! /usr/bin/env python
-
-from distributedflock import Zookeeper as ZK
+#!/usr/bin/env python
 
 import subprocess
 import sys
 import os
 import time
-import atexit
 import json
 import optparse
+import shlex
 import logging
+import logging.handlers
 
 import signal
 from threading import Condition
+
+from distributedflock import Zookeeper as ZK
+
+DEFAULT_ZOOKEEPER_LOG_LEVEL = "WARN"
+DEFAULT_LOG_LEVEL = "INFO"
+DEFAULT_LOGFILE_PATH = "/dev/null"
+
+LOGGER = logging.getLogger("zk-flock")
+
+def logger_level_translator(func):
+    _tr = { "DEBUG" : logging.DEBUG,
+            "INFO" : logging.INFO,
+            "ERROR" : logging.ERROR,
+            "WARN" : logging.WARNING,
+    }
+    def wrapper(path, level):
+        return func(path, _tr.get(level, "ERROR"))
+    return wrapper
+
+@logger_level_translator
+def initialize_logger(path, level):
+    _format = logging.Formatter("%(asctime)s %(levelname)-8s %(process)d %(message)s", "%Y-%m-%d %H:%M:%S")
+    app_log = logging.getLogger('zk-flock')
+    lhandler = logging.handlers.TimedRotatingFileHandler(path, when="midnight", backupCount=3)
+    lhandler.setFormatter(_format)
+    lhandler.setLevel(level)
+    app_log.addHandler(lhandler)
+    app_log.setLevel(level)
+    app_log.info("Initialize logger succesfully")
 
 #========================================================================================
 
@@ -67,28 +95,29 @@ class Daemon(object):
         pass
 
 #===========================================================
-#   NULL logger
-#===========================================================
-
-#===========================================================
 
 def start_child(cmd):
-    import shlex
     args = shlex.split(cmd)
     try:
         p = subprocess.Popen(args, close_fds=True)
     except OSError as err:
-        print "OSError %s" % str(err)
+        LOGGER.error("OSError: %s" % str(err))
     except ValueError as err:
-        print "ValueError %s" % str(err)
+        LOGGER.error("ValueError: %s" % str(err))
     else:
+        LOGGER.info("Start subprocess: %s (PID: %d)" % (cmd, p.pid))
         return p
 
 def kill_child(prcs):
     if prcs.poll() is None:
+        LOGGER.info("Send SIGTERM to child process (PID: %d)" % prcs.pid)
         prcs.terminate()
+        time.sleep(1)
     if prcs.poll() is None:
+        LOGGER.info("Send SIGKILL to child process (PID: %d)" % prcs.pid)
         prcs.kill()
+    LOGGER.info("Return code: %d (PID: %d)" % (prcs.returncode, prcs.pid))
+    return prcs.returncode
 
 def read_cfg(path):
     try:
@@ -97,45 +126,48 @@ def read_cfg(path):
             cfg['host']
             cfg['app_id']
             cfg['timeout']
+            logger_config = cfg.get('logger', {})
+            cfg['path'] = logger_config.get('path', DEFAULT_LOGFILE_PATH)
+            cfg['ZookeeperLog'] = (logger_config.get('path', DEFAULT_LOGFILE_PATH),\
+                                            logger_config.get('zklevel', DEFAULT_ZOOKEEPER_LOG_LEVEL))
+            cfg['level'] = logger_config.get('level', DEFAULT_LOG_LEVEL)
+            cfg['logger_name'] = 'zk-flock'
+            cfg.pop('logger')
     except KeyError as err:
         print "Missing parametr %s" % str(err)
     except Exception as err:
         print "Config error %s" % str(err)
-        return None
     else:
         return cfg
 
 def get_la():
-    with open('/proc/loadavg') as loadavg:
-        load_last_min = loadavg.readline().split()[0]
-        return float(load_last_min)
+    return os.getloadavg()[0]
 
 def main(cmd_arg, zk_cfg):
 
     z = ZK.ZKLockServer(**cfg)
     if not z.getlock():
+        LOGGER.debug("Unable to acquire lock")
         return
-
 
     cv = Condition()
     def sigterm_and_sigchld_handle(signum, frame):
-        #print "Handle signal %d. Kill child"  % signum
+        LOGGER.info("Receive SIGNAL: %d" % signum)
         try:
             z.releaselock()
         except Exception as err:
-            #print str(err)
-            pass
+            LOGGER.debug(str(err))
         finally:
             kill_child(p)
             sys.exit(1)
 
     def watcher_cb():
-        #print "Lock state have been changed!"
         cv.acquire()
         cv.notify()
         cv.release()
 
     if not z.set_async_checkLock(watcher_cb):
+        LOGGER.error("Unable to attach async wathcer for lock")
         return
 
     p = start_child(cmd_arg)
@@ -160,18 +192,14 @@ def main(cmd_arg, zk_cfg):
 if __name__ == "__main__":
     usage = "Usage: %prog LOCKNAME COMMAND [-cdhs]"
     parser = optparse.OptionParser(usage)
-
     parser.add_option("-c", "--confpath", action="store", dest="confpath", default="/etc/distributed-flock.json",\
                                                         help="Configuration file. default: /etc/distributed-flock.json")
-
     parser.add_option("-d", "--daemonize", action="store_true", dest="isdaemonize", default=False, help="Daemonize this")
-
     parser.add_option("-m", "--maxla", action="store", dest="maxla", default=-1,\
                                                         help="Maximum load average to start working. Default: -1")
-
     parser.add_option("-s", "--sleep", action="store_true", dest="want_to_sleep", default=False, help="Yes, I want to sleep before work")
-
     (options, args) = parser.parse_args()
+
     if len(args) == 2:
         pid_name = args[0]
         cmd_arg = args[1]
@@ -179,24 +207,30 @@ if __name__ == "__main__":
         print "Wrong count of arguments"
         parser.print_help()
         sys.exit(1)
-
+    
+    # Config parsing
     cfg = read_cfg(options.confpath)
     if cfg is None:
         print "Unable to read configuration file: %s" % options.confpath
         sys.exit(1)
+    initialize_logger(cfg['path'], cfg['level'])
+    cfg['name'] = pid_name # lockname
 
-    cfg['name'] = pid_name
-    cfg['zookeeperlog'] = "/tmp/ZK.log"
+    # Sleep
     want_to_sleep = cfg.get("sleep", "ON" if options.want_to_sleep else "OFF")
     if want_to_sleep not in ("ON", "OFF"):
         print "Available values for sleep are ON/OFF, not a %s " % want_to_sleep
         sys.exit(1)
+    
+    # Read maxla
     maxla = cfg.get("maxla", options.maxla)
     if (maxla > 0) and (maxla <= get_la()):
-        print "Too much load averaga. Max la: %f, Current la: %f" % (maxla, get_la())
+        LOGGER.info("Too much load averaga. Max la: %f, Current la: %f" % (maxla, get_la()))
         sys.exit(0)
+
     if want_to_sleep == "ON":
         time.sleep(get_la())
+
     if options.isdaemonize:
         daemon = Daemon()
         daemon.run = main

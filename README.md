@@ -9,6 +9,11 @@ You have to write the configuration file **/etc/distributed-flock.json** with th
     "app_id"    :   "my_application_namespace",
     "sleep"     :   "ON",    //ON or OFF - Default OFF
     "maxla"     :   30      // If >=0 -> max loadaverage for work. Default -1
+    "logger"    :   {
+            "path"      :   "/tmp/zkflock.log",
+            "level"     :   "INFO",        
+            "zklevel"   :   "ERROR"
+        }
 }
 ```
  * **host** - list of Zookeeper nodes
@@ -17,6 +22,15 @@ You have to write the configuration file **/etc/distributed-flock.json** with th
                 in Zookeeper with path likes **/app_id/your_lock_name**
  * **sleep** - Sleep before work. Default: "OFF". Switch "ON" by -s (--sleep).
  * **maxla** - Maximal load average. Use if >=0. Default: -1. Set by -m (--maxla).
+
+Logging
+=======
+
+* **path** - path to log file (default: /dev/null)
+* **level** - logging level of zk-flock (default: INFO)
+* **zklevel** - logging level of Zookeeper Client (default: WARN)
+
+Both loglevels are one of values: ERROR, WARN, INFO, DEBUG
 
 Usage
 =====
