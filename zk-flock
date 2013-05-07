@@ -5,6 +5,7 @@ import sys
 import os
 import time
 import json
+import errno
 import optparse
 import shlex
 import logging
@@ -101,23 +102,36 @@ def start_child(cmd):
     try:
         p = subprocess.Popen(args, close_fds=True)
     except OSError as err:
-        LOGGER.error("OSError: %s" % str(err))
+        LOGGER.error("Unable to start child process, because of %s" % err)
+        sys.exit(1)
     except ValueError as err:
         LOGGER.error("ValueError: %s" % str(err))
+        sys.exit(1)
     else:
         LOGGER.info("Start subprocess: %s (PID: %d)" % (cmd, p.pid))
         return p
 
 def kill_child(prcs):
-    if prcs.poll() is None:
-        LOGGER.info("Send SIGTERM to child process (PID: %d)" % prcs.pid)
-        prcs.terminate()
-        time.sleep(1)
-    if prcs.poll() is None:
-        LOGGER.info("Send SIGKILL to child process (PID: %d)" % prcs.pid)
-        prcs.kill()
-    LOGGER.info("Return code: %d (PID: %d)" % (prcs.returncode, prcs.pid))
-    return prcs.returncode
+    # Detach SIGCHLD handler,  because we will kill it manually
+    signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+
+    if prcs.poll() is not None:
+        LOGGER.info("Child returned code: %d (PID: %d)" % (prcs.returncode, prcs.pid))
+        return prcs.returncode
+    elif prcs.poll() is None:
+        try:
+            LOGGER.info("Send SIGTERM to child process (PID: %d)" % prcs.pid)
+            prcs.terminate()
+            time.sleep(1)
+            prcs.kill()
+            LOGGER.info("Send SIGKILL to child process (PID: %d)" % prcs.pid)
+        except OSError as err:
+            if err.args[0] != errno.ESRCH:
+                # We try to kill child with two ways: kill and kill -9
+                # than sometimes kill -9 fail with no such process - so ignore it
+                LOGGER.error("Kill child error: %s" % err)
+                return
+        LOGGER.info("Killed child %d succesfully" % prcs.pid)
 
 def read_cfg(path):
     try:
@@ -148,19 +162,31 @@ def main(cmd_arg, zk_cfg):
 
     z = ZK.ZKLockServer(**cfg)
     if not z.getlock():
-        LOGGER.debug("Unable to acquire lock")
-        return
+        LOGGER.debug("Unable to acquire lock. Do exit")
+        sys.exit(0)
 
     cv = Condition()
     def sigterm_and_sigchld_handle(signum, frame):
-        LOGGER.info("Receive SIGNAL: %d" % signum)
+        # TBD - split by two handlers for each signal
+        if signum == signal.SIGTERM:
+            LOGGER.info("Stop work by SIGTERM")
+        elif signum == signal.SIGCHLD:
+            LOGGER.info("Stop work by SIGCHLD")
+        else:
+            LOGGER.info("Receive SIGNAL: %d" % signum)
         try:
             z.releaselock()
         except Exception as err:
             LOGGER.debug(str(err))
         finally:
-            kill_child(p)
-            sys.exit(1)
+            if kill_child(p) is not None:
+                # Means that child has ended work and return some sode
+                # That's for SIGCHLD 
+                sys.exit(0)
+            else:
+                # Means we kill our child manualy
+                # That's true for SIGKILL
+                sys.exit(1)
 
     def watcher_cb():
         cv.acquire()
@@ -168,8 +194,8 @@ def main(cmd_arg, zk_cfg):
         cv.release()
 
     if not z.set_async_checkLock(watcher_cb):
-        LOGGER.error("Unable to attach async wathcer for lock")
-        return
+        LOGGER.error("Unable to attach async watcher for lock")
+        sys.exit(1)
 
     p = start_child(cmd_arg)
     signal.signal(signal.SIGTERM, sigterm_and_sigchld_handle)
@@ -179,13 +205,14 @@ def main(cmd_arg, zk_cfg):
         cv.wait(100)
         cv.release()
         if not z.checkLock():
+            LOGGER.warning("Lock lost")
             try:
                 kill_child(p)
                 z.destroy()
             except Exception as err:
                 pass
             finally:
-                return
+                sys.exit(1)
 
 #===============================================
 #===============================================
