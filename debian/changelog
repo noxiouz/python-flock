@@ -1,3 +1,9 @@
+zk-flock (0.1-beta9) lucid; urgency=low
+
+  * work on returned codes 
+
+ -- Anton Tyurin <noxiouz@yandex-team.ru>  Tue, 07 May 2013 16:11:43 +0400
+
 zk-flock (0.1-beta8) lucid; urgency=low
 
   * default logging to /dev/null 

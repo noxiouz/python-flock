@@ -185,7 +185,7 @@ def main(cmd_arg, zk_cfg):
                 sys.exit(0)
             else:
                 # Means we kill our child manualy
-                # That's true for SIGKILL
+                # That's true for SIGTERM
                 sys.exit(1)
 
     def watcher_cb():
