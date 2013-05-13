@@ -1,3 +1,10 @@
+zk-flock (0.1-beta10) lucid; urgency=low
+
+  * Change TimedRotatedFileHandler to WatchedFileHandler - use your own
+  rotating scripts
+
+ -- Anton Tyurin <noxiouz@yandex-team.ru>  Mon, 13 May 2013 21:58:38 +0400
+
 zk-flock (0.1-beta9) lucid; urgency=low
 
   * work on returned codes 

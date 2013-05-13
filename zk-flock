@@ -36,7 +36,7 @@ def logger_level_translator(func):
 def initialize_logger(path, level):
     _format = logging.Formatter("%(asctime)s %(levelname)-8s %(process)d %(message)s", "%Y-%m-%d %H:%M:%S")
     app_log = logging.getLogger('zk-flock')
-    lhandler = logging.handlers.TimedRotatingFileHandler(path, when="midnight", backupCount=3)
+    lhandler = logging.handlers.WatchedFileHandler(path, mode='a')
     lhandler.setFormatter(_format)
     lhandler.setLevel(level)
     app_log.addHandler(lhandler)
