@@ -33,9 +33,14 @@ class ZKLockServer():
             self.zkclient = ZK.ZKeeperClient(**config)
             self.id = config['app_id']
             res = self.zkclient.write('/'+self.id,"Rootnode")
-            if (res != ZK.ZK_NODE_EXISTS ) and (res < 0):
-                self.log.warning('Cannot init ZK lock server')
-                raise Exception
+            if (res != ZK.zookeeper.NODEEXISTS) and (res < 0):
+                if res == ZK.DEFAULT_ERRNO:
+                    self.log.error("Unexpectable error")
+                    raise Exception("Unexpectable error. See Zookeeper logs for details")
+                else:
+                    msg = "Zookeeper error number %d: %s" % (res, ZK.zookeeper.zerror(res))
+                    self.log.error(msg)
+                    raise Exception(msg)
             self.lock = config['name']
             self.lockpath = '/'+self.id+'/'+self.lock
             self.locked = False

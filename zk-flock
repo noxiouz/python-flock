@@ -160,7 +160,12 @@ def get_la():
 
 def main(cmd_arg, zk_cfg):
 
-    z = ZK.ZKLockServer(**cfg)
+    try:
+        z = ZK.ZKLockServer(**cfg)
+    except Exception as err:
+        # Error is logged from Zk wrapper module
+        sys.exit(1)
+
     if not z.getlock():
         LOGGER.debug("Unable to acquire lock. Do exit")
         sys.exit(0)

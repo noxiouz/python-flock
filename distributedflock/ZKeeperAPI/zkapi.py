@@ -27,9 +27,9 @@ import zookeeper
 
 ZK_ACL = {"perms":0x1f, "scheme":"world", "id":"anyone"}
 
-ZK_NODE_EXISTS=-2;
-
 zookeeper.set_log_stream(open('/dev/null','w'))
+
+DEFAULT_ERRNO = -9999
 
 # JFYI
 LOG_LEVELS = {  "DEBUG" : zookeeper.LOG_LEVEL_DEBUG,
@@ -51,23 +51,28 @@ class Null(object):
 def handling_error(zkfunc, logger=Null()):
     def wrapper(*args, **kwargs):
         ret = None
-        errno = -1
+        errno = DEFAULT_ERRNO
         try:
             ret = zkfunc(*args, **kwargs)
-        except zookeeper.ConnectionLossException, err:
-            logger.debug("ConectionLossException: %s" % str(err))
+        except zookeeper.ConnectionLossException as err:
+            logger.error("ConectionLossException: %s" % str(err))
+            errno = zookeeper.CONNECTIONLOSS
         except zookeeper.NodeExistsException as err:
             logger.debug("Node exists: %s" % str(err))
-            errno = ZK_NODE_EXISTS
+            errno = zookeeper.NODEEXISTS
+        except zookeeper.OperationTimeoutException as err:
+            logger.error("Operation timeout: %s" % str(err))
+            errno = zookeeper.OPERATIONTIMEOUT
+        except zookeeper.zookeeper.RuntimeInconsistencyException as err:
+            logger.error("RuntimeInconsistency: %s" % str(err))
+            errno = zookeeper.RUNTIMEINCONSISTENCY
         except zookeeper.MarshallingErrorException as err:
-            logger.error("zookeeper.MarshallingError: %s" % str(err))
-        #=====================================
-        except zookeeper.ZooKeeperException as errmsg:
-            logger.debug(errmsg)
-            raise
-        except Exception as errmsg:
-            logger.exception(errmsg)
-            raise
+            logger.error(str(err))
+            errno = zookeeper.MARSHALLINGERROR
+        except zookeeper.ZooKeeperException as err:
+            logger.error("ZookeperException %s" % str(err))
+        except Exception as err:
+            logger.exception("Unknown exception %s" % str(err))
         else:
             errno = 0
         finally:
@@ -136,7 +141,7 @@ class ZKeeperClient():
 
     def read(self, absname):
         _res = handling_error(zookeeper.get, self.logger)(self.zkhandle, absname)
-        res = (_res[0][0], _res[1] )
+        res = (_res[0][0], _res[1])
         return res
 
     def list(self, absname):
@@ -149,7 +154,7 @@ class ZKeeperClient():
     def delete(self, absname):
         return handling_error(zookeeper.delete, self.logger)(self.zkhandle, absname)[1]
 
-#========================
+    # Async API
     def aget(self, node, callback):
         if not callable(callback):
             return None
