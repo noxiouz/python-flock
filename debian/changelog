@@ -1,3 +1,9 @@
+zk-flock (0.1-beta11) lucid; urgency=low
+
+  * More logging about Zookeeper exceptions.
+
+ -- Anton Tyurin <noxiouz@yandex-team.ru>  Fri, 24 May 2013 02:19:12 +0400
+
 zk-flock (0.1-beta10) lucid; urgency=low
 
   * Change TimedRotatedFileHandler to WatchedFileHandler - use your own
