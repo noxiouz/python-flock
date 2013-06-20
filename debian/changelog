@@ -1,3 +1,9 @@
+zk-flock (0.1-beta13) lucid; urgency=low
+
+  * add python-support deps
+
+ -- Anton Tyurin <noxiouz@yandex-team.ru>  Fri, 21 Jun 2013 01:27:32 +0400
+
 zk-flock (0.1-beta12) lucid; urgency=low
 
   * fix debianization under precise 
