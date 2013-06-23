@@ -45,7 +45,7 @@ If your application requires command-line arguments enclose it in double quotes:
 zk-flock my_test_lock "bash /home/user/test.sh arg1 arg2 arg3"
 ```
 
-For attempting to lock lasted for a specific time, use the -**w** option (--**wait**) setting the time in seconds.
+For attempting to lock lasted for a specific time, use the **-w** option (**--wait**) setting the time in seconds.
 Add key **-d** or **--daemonize** to starts this appliction as daemon.
 
 Warning
