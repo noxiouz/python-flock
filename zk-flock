@@ -10,6 +10,7 @@ import optparse
 import shlex
 import logging
 import logging.handlers
+from functools import partial
 
 import signal
 from threading import Condition
@@ -26,10 +27,9 @@ def logger_level_translator(func):
     _tr = { "DEBUG" : logging.DEBUG,
             "INFO" : logging.INFO,
             "ERROR" : logging.ERROR,
-            "WARN" : logging.WARNING,
-    }
+            "WARN" : logging.WARNING }
     def wrapper(path, level):
-        return func(path, _tr.get(level, "ERROR"))
+        return func(path, _tr.get(level, logging.ERROR))
     return wrapper
 
 @logger_level_translator
@@ -158,7 +158,12 @@ def read_cfg(path):
 def get_la():
     return os.getloadavg()[0]
 
-def main(cmd_arg, zk_cfg):
+def notifier(cv):
+    cv.acquire()
+    cv.notify()
+    cv.release()
+
+def main(cmd_arg, zk_cfg, period=None):
 
     try:
         z = ZK.ZKLockServer(**cfg)
@@ -167,8 +172,26 @@ def main(cmd_arg, zk_cfg):
         sys.exit(1)
 
     if not z.getlock():
-        LOGGER.debug("Unable to acquire lock. Do exit")
-        sys.exit(0)
+        if period is None:
+            LOGGER.debug("Unable to acquire lock. Do exit")
+            sys.exit(0)
+        else:
+            LOGGER.info("Try to wait %d sec" % period)
+            limit_time = time.time() + period
+            cond_var = Condition()
+            watcher = partial(notifier, cond_var)
+            while limit_time - time.time() > 0.1:
+                time_to_wait = limit_time - time.time()
+                z.set_node_deleting_watcher(z.lockpath, watcher)
+                cond_var.acquire()
+                cond_var.wait(time_to_wait)
+                cond_var.release()
+                if z.getlock():
+                    break
+            if not z.checkLock():
+                LOGGER.debug("Unable to acquire lock. Do exit")
+                sys.exit(0)
+
 
     cv = Condition()
     def sigterm_and_sigchld_handle(signum, frame):
@@ -227,10 +250,17 @@ if __name__ == "__main__":
     parser = optparse.OptionParser(usage)
     parser.add_option("-c", "--confpath", action="store", dest="confpath", default="/etc/distributed-flock.json",\
                                                         help="Configuration file. default: /etc/distributed-flock.json")
-    parser.add_option("-d", "--daemonize", action="store_true", dest="isdaemonize", default=False, help="Daemonize this")
-    parser.add_option("-m", "--maxla", action="store", dest="maxla", default=-1,\
-                                                        help="Maximum load average to start working. Default: -1")
-    parser.add_option("-s", "--sleep", action="store_true", dest="want_to_sleep", default=False, help="Yes, I want to sleep before work")
+    parser.add_option("-d", "--daemonize", action="store_true",
+                     dest="isdaemonize", default=False, help="Daemonize this")
+
+    parser.add_option("-m", "--maxla", action="store",
+                     dest="maxla", default=-1, help="Maximum load average to start working. Default: -1")
+
+    parser.add_option("-s", "--sleep", action="store_true",
+                     dest="want_to_sleep", default=False, help="Yes, I want to sleep before work")
+
+    parser.add_option("-w", "--wait", action="store", type=float,
+                     dest="waittime", default=None, help="Try to acquire lock for some seconds")
     (options, args) = parser.parse_args()
 
     if len(args) == 2:
@@ -267,6 +297,6 @@ if __name__ == "__main__":
     if options.isdaemonize:
         daemon = Daemon()
         daemon.run = main
-        daemon.start(cmd_arg, cfg)
+        daemon.start(cmd_arg, cfg, options.waittime)
     else:
-        main(cmd_arg, cfg)
+        main(cmd_arg, cfg, options.waittime)

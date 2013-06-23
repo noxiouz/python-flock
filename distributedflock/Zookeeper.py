@@ -52,6 +52,8 @@ class ZKLockServer():
             self.log.debug('ZK create')
 
     def getlock(self):
+        if self.locked:
+            return True
         if self.zkclient.write(self.lockpath, self.lock_content,1) == 0:
             self.log.info('Lock: success')
             self.locked = True
@@ -89,15 +91,24 @@ class ZKLockServer():
     def set_async_checkLock(self, callback):
         if not self.locked:
             return False
-        if not callable(callback):
-            return False
-        def callback_wrapper():
+        assert callable(callback)
+        def callback_wrapper(*args):
             callback()
             if self.checkLock:
                 self.zkclient.aget(self.lockpath, callback_wrapper)
 
         if self.zkclient.aget(self.lockpath, callback_wrapper) == 0:
             return True
+
+    def set_node_deleting_watcher(self, path, callback):
+        assert callable(callback)
+        def callback_wrapper(event, state, path):
+            if event == 2: # zookeeper.DELETE_EVENT
+                callback()
+        if self.zkclient.aget(path, callback_wrapper) == 0:
+            return True
+        else:
+            return False
 
     def destroy(self):
         if self.zkclient.disconnect() == 0:

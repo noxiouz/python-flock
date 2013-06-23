@@ -170,7 +170,7 @@ class ZKeeperClient():
 
             if state == zookeeper.EXPIRED_SESSION_STATE:
                 self.logger.error("Session expired")
-            callback()
+            callback(event, state, path)
         return zookeeper.aget(self.zkhandle, node, partial(watcher, self), self.handler)
 
     def handler(self, zh, rc, data, stat):
