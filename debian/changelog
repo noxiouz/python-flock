@@ -1,3 +1,9 @@
+zk-flock (0.1-beta15) lucid; urgency=low
+
+  * assert on zookeeper is None 
+
+ -- Anton Tyurin <noxiouz@yandex-team.ru>  Mon, 08 Jul 2013 17:49:43 +0400
+
 zk-flock (0.1-beta14) lucid; urgency=low
 
   * add --wait/ -w option: try to acquire lock for some seconds

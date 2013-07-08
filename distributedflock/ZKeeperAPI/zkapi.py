@@ -63,7 +63,7 @@ def handling_error(zkfunc, logger=Null()):
         except zookeeper.OperationTimeoutException as err:
             logger.error("Operation timeout: %s" % str(err))
             errno = zookeeper.OPERATIONTIMEOUT
-        except zookeeper.zookeeper.RuntimeInconsistencyException as err:
+        except zookeeper.RuntimeInconsistencyException as err:
             logger.error("RuntimeInconsistency: %s" % str(err))
             errno = zookeeper.RUNTIMEINCONSISTENCY
         except zookeeper.MarshallingErrorException as err:
@@ -174,8 +174,14 @@ class ZKeeperClient():
         return zookeeper.aget(self.zkhandle, node, partial(watcher, self), self.handler)
 
     def handler(self, zh, rc, data, stat):
+        try:
+            assert(zookeeper is not None)
+        except AssertionError as err:
+            self.logger.exception("zookeeper is NoneType")
+            self.logger.error(str(zookeeper))
+            import zookeeper
         if zookeeper.OK == rc:
-            self.logger.debug("Callback was  attached succesfully")
+            self.logger.debug("Callback was attached succesfully")
         else:
            if zookeeper.NONODE == rc:
                 self.logger.error("Watched node doesn't exists")
