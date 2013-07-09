@@ -1,3 +1,9 @@
+zk-flock (0.1-beta16) lucid; urgency=low
+
+  * transport zookeeper module into watcher handler (looks like bug) 
+
+ -- Anton Tyurin <noxiouz@yandex-team.ru>  Tue, 09 Jul 2013 16:30:03 +0400
+
 zk-flock (0.1-beta15) lucid; urgency=low
 
   * assert on zookeeper is None 

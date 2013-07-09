@@ -171,17 +171,11 @@ class ZKeeperClient():
             if state == zookeeper.EXPIRED_SESSION_STATE:
                 self.logger.error("Session expired")
             callback(event, state, path)
-        return zookeeper.aget(self.zkhandle, node, partial(watcher, self), self.handler)
+        return zookeeper.aget(self.zkhandle, node, partial(watcher, self), partial(self.handler, zookeeper))
 
-    def handler(self, zh, rc, data, stat):
-        try:
-            assert(zookeeper is not None)
-        except AssertionError as err:
-            self.logger.exception("zookeeper is NoneType")
-            self.logger.error(str(zookeeper))
-            import zookeeper
-        if zookeeper.OK == rc:
+    def handler(self, zkmodule, zh, rc, data, stat):
+        if zkmodule.OK == rc:
             self.logger.debug("Callback was attached succesfully")
         else:
-           if zookeeper.NONODE == rc:
+           if zkmodule.NONODE == rc:
                 self.logger.error("Watched node doesn't exists")
