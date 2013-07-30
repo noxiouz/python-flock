@@ -163,7 +163,7 @@ def notifier(cv):
     cv.notify()
     cv.release()
 
-def main(cmd_arg, zk_cfg, period=None):
+def main(cmd_arg, zk_cfg, period=None, exitcode=0):
 
     try:
         z = ZK.ZKLockServer(**cfg)
@@ -174,7 +174,7 @@ def main(cmd_arg, zk_cfg, period=None):
     if not z.getlock():
         if period is None:
             LOGGER.debug("Unable to acquire lock. Do exit")
-            sys.exit(0)
+            sys.exit(exitcode)
         else:
             LOGGER.info("Try to wait %d sec" % period)
             limit_time = time.time() + period
@@ -190,7 +190,7 @@ def main(cmd_arg, zk_cfg, period=None):
                     break
             if not z.checkLock():
                 LOGGER.debug("Unable to acquire lock. Do exit")
-                sys.exit(0)
+                sys.exit(exitcode)
 
 
     cv = Condition()
@@ -261,6 +261,9 @@ if __name__ == "__main__":
 
     parser.add_option("-w", "--wait", action="store", type=float,
                      dest="waittime", default=None, help="Try to acquire lock for some seconds")
+    
+    parser.add_option("-x", "--exitcode", action="store",
+                     dest="exitcode", default=0, help="Exit code in case we were unable to acquire lock. Default: 0")
     (options, args) = parser.parse_args()
 
     if len(args) == 2:
@@ -299,4 +302,4 @@ if __name__ == "__main__":
         daemon.run = main
         daemon.start(cmd_arg, cfg, options.waittime)
     else:
-        main(cmd_arg, cfg, options.waittime)
+        main(cmd_arg, cfg, options.waittime, options.exitcode)
