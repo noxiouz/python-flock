@@ -262,7 +262,7 @@ if __name__ == "__main__":
     parser.add_option("-w", "--wait", action="store", type=float,
                      dest="waittime", default=None, help="Try to acquire lock for some seconds")
     
-    parser.add_option("-x", "--exitcode", action="store",
+    parser.add_option("-x", "--exitcode", action="store", type=int,
                      dest="exitcode", default=0, help="Exit code in case we were unable to acquire lock. Default: 0")
     (options, args) = parser.parse_args()
 
