@@ -1,3 +1,15 @@
+zk-flock (0.1-beta18) lucid; urgency=low
+
+  * fix type of command line option Default 
+
+ -- Anton Tyurin <noxiouz@yandex-team.ru>  Thu, 01 Aug 2013 12:33:41 +0400
+
+zk-flock (0.1-beta17) lucid; urgency=low
+
+  * Added exitcode commandline option
+
+ -- Anton Tyurin <noxiouz@yandex-team.ru>  Tue, 30 Jul 2013 18:46:33 +0400
+
 zk-flock (0.1-beta16) lucid; urgency=low
 
   * transport zookeeper module into watcher handler (looks like bug) 
