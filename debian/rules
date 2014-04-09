@@ -1,9 +1,7 @@
 #!/usr/bin/make -f
 
-DEB_PYTHON_SYSTEM=pysupport
+DH_ALWAYS_EXCLUDE = .svn:.git:.bzr:.hg:.gitignore
+DEB_PYTHON_SYSTEM=pycentral
 
 include /usr/share/cdbs/1/rules/debhelper.mk
 include /usr/share/cdbs/1/class/python-distutils.mk
-
-DEB_PYTHON_INSTALL_ARGS_ALL += --install-layout=deb
-
