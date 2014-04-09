@@ -1,4 +1,23 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2012 Tyurin Anton noxiouz@yandex-team.ru
+#
+# This file is part of Distributed-flock.
+#
+# Distributed-flock is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# Combaine is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
 import subprocess
 import sys
@@ -23,31 +42,34 @@ DEFAULT_LOGFILE_PATH = "/dev/null"
 
 LOGGER = logging.getLogger("zk-flock")
 
+
 def logger_level_translator(func):
-    _tr = { "DEBUG" : logging.DEBUG,
-            "INFO" : logging.INFO,
-            "ERROR" : logging.ERROR,
-            "WARN" : logging.WARNING }
+    _tr = {"DEBUG": logging.DEBUG,
+           "INFO": logging.INFO,
+           "ERROR": logging.ERROR,
+           "WARN": logging.WARNING}
+
     def wrapper(path, level):
         return func(path, _tr.get(level, logging.ERROR))
     return wrapper
 
+
 @logger_level_translator
 def initialize_logger(path, level):
-    _format = logging.Formatter("%(asctime)s %(levelname)-8s %(process)d %(message)s", "%Y-%m-%d %H:%M:%S")
+    _format = logging.Formatter('%(asctime)s %(levelname)-8s\
+%(process)d %(message)s', "%Y-%m-%d %H:%M:%S")
     app_log = logging.getLogger('zk-flock')
     lhandler = logging.handlers.WatchedFileHandler(path, mode='a')
     lhandler.setFormatter(_format)
     lhandler.setLevel(level)
     app_log.addHandler(lhandler)
     app_log.setLevel(level)
-    app_log.info("Initialize logger succesfully")
+    app_log.info("Logger has been initialized succesfully")
 
-#========================================================================================
 
 class Daemon(object):
-
-    def __init__(self, stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'):
+    def __init__(self, stdin='/dev/null',
+                 stdout='/dev/null', stderr='/dev/null'):
         self.stdin = stdin
         self.stdout = stdout
         self.stderr = stderr
@@ -59,7 +81,8 @@ class Daemon(object):
             if pid > 0:
                 sys.exit(0)
         except OSError, err:
-            sys.stderr.write("First fork failed: %d (%s)\n" % (err.errno, err.strerror))
+            sys.stderr.write("First fork failed: %d (%s)\n" % (err.errno,
+                                                               err.strerror))
             sys.exit(1)
         # decouple from parent environment
         os.chdir("/")
@@ -72,9 +95,10 @@ class Daemon(object):
             if pid > 0:
                 sys.exit(0)
         except OSError, err:
-            sys.stderr.write("Second fork failed: %d (%s)\n" % (err.errno, err.strerror))
+            sys.stderr.write("Second fork failed: %d (%s)\n" % (err.errno,
+                                                                err.strerror))
             sys.exit(1)
-            
+
         sys.stdout.flush()
         sys.stderr.flush()
         si = file(self.stdin, 'r')
@@ -97,6 +121,7 @@ class Daemon(object):
 
 #===========================================================
 
+
 def start_child(cmd):
     args = shlex.split(cmd)
     try:
@@ -111,43 +136,48 @@ def start_child(cmd):
         LOGGER.info("Start subprocess: %s (PID: %d)" % (cmd, p.pid))
         return p
 
+
 def kill_child(prcs):
-    # Detach SIGCHLD handler,  because we will kill it manually
+    # Detach SIGCHLD handler, as we will kill it manually
     signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
     if prcs.poll() is not None:
-        LOGGER.info("Child returned code: %d (PID: %d)" % (prcs.returncode, prcs.pid))
+        LOGGER.info("Child returned code: %d (PID: %d)",
+                    prcs.returncode, prcs.pid)
         return prcs.returncode
     elif prcs.poll() is None:
         try:
-            LOGGER.info("Send SIGTERM to child process (PID: %d)" % prcs.pid)
+            LOGGER.info("Send SIGTERM to child process (PID: %d)", prcs.pid)
             prcs.terminate()
             time.sleep(1)
             prcs.kill()
-            LOGGER.info("Send SIGKILL to child process (PID: %d)" % prcs.pid)
+            LOGGER.info("Send SIGKILL to child process (PID: %d)", prcs.pid)
         except OSError as err:
             if err.args[0] != errno.ESRCH:
                 # We try to kill child with two ways: kill and kill -9
-                # than sometimes kill -9 fail with no such process - so ignore it
-                LOGGER.error("Kill child error: %s" % err)
+                # than sometimes kill -9 fail
+                # with no such process - so ignore it
+                LOGGER.error("Kill child error: %s", err)
                 return
-        LOGGER.info("Killed child %d succesfully" % prcs.pid)
+        LOGGER.info("Killed child %d succesfully", prcs.pid)
+
 
 def read_cfg(path):
     try:
         with open(path) as f:
             cfg = json.load(f)
-            cfg['host']
-            cfg['app_id']
-            cfg['timeout']
-            logger_config = cfg.get('logger', {})
-            cfg['path'] = logger_config.get('path', DEFAULT_LOGFILE_PATH)
-            cfg['ZookeeperLog'] = (logger_config.get('path', DEFAULT_LOGFILE_PATH),\
-                                            logger_config.get('zklevel', DEFAULT_ZOOKEEPER_LOG_LEVEL))
-            cfg['level'] = logger_config.get('level', DEFAULT_LOG_LEVEL)
-            cfg['logger_name'] = 'zk-flock'
-            if cfg.has_key('logger'):
-                cfg.pop('logger')
+        cfg['host']
+        cfg['app_id']
+        cfg['timeout']
+        logger_config = cfg.pop('logger', {})
+        cfg['path'] = logger_config.get('path', DEFAULT_LOGFILE_PATH)
+        cfg['ZookeeperLog'] = (logger_config.get('path',
+                                                 DEFAULT_LOGFILE_PATH),
+                               logger_config.get('zklevel',
+                                                 DEFAULT_ZOOKEEPER_LOG_LEVEL))
+
+        cfg['level'] = logger_config.get('level', DEFAULT_LOG_LEVEL)
+        cfg['logger_name'] = 'zk-flock'
     except KeyError as err:
         print "Missing parametr %s" % str(err)
     except Exception as err:
@@ -155,20 +185,23 @@ def read_cfg(path):
     else:
         return cfg
 
+
 def get_la():
     return os.getloadavg()[0]
+
 
 def notifier(cv):
     cv.acquire()
     cv.notify()
     cv.release()
 
+
 def main(cmd_arg, zk_cfg, period=None, exitcode=0):
 
     try:
         z = ZK.ZKLockServer(**cfg)
     except Exception as err:
-        # Error is logged from Zk wrapper module
+        print err
         sys.exit(1)
 
     if not z.getlock():
@@ -192,8 +225,8 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0):
                 LOGGER.debug("Unable to acquire lock. Do exit")
                 sys.exit(exitcode)
 
-
     cv = Condition()
+
     def sigterm_and_sigchld_handle(signum, frame):
         # TBD - split by two handlers for each signal
         if signum == signal.SIGTERM:
@@ -209,7 +242,7 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0):
         finally:
             if kill_child(p) is not None:
                 # Means that child has ended work and return some sode
-                # That's for SIGCHLD 
+                # That's for SIGCHLD
                 sys.exit(0)
             else:
                 # Means we kill our child manualy
@@ -229,41 +262,44 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0):
     signal.signal(signal.SIGTERM, sigterm_and_sigchld_handle)
     signal.signal(signal.SIGCHLD, sigterm_and_sigchld_handle)
     while True:
-        cv.acquire()
-        cv.wait(100)
-        cv.release()
+        with cv:
+            cv.wait(100)
         if not z.checkLock():
             LOGGER.warning("Lock lost")
             try:
                 kill_child(p)
                 z.destroy()
-            except Exception as err:
+            except Exception:
                 pass
             finally:
                 sys.exit(1)
 
-#===============================================
-#===============================================
 
 if __name__ == "__main__":
     usage = "Usage: %prog LOCKNAME COMMAND [-cdhs]"
     parser = optparse.OptionParser(usage)
-    parser.add_option("-c", "--confpath", action="store", dest="confpath", default="/etc/distributed-flock.json",\
-                                                        help="Configuration file. default: /etc/distributed-flock.json")
+    parser.add_option("-c", "--confpath", action="store",
+                      dest="confpath", default="/etc/distributed-flock.json",
+                      help="Configuration file (/etc/distributed-flock.json)")
+
     parser.add_option("-d", "--daemonize", action="store_true",
-                     dest="isdaemonize", default=False, help="Daemonize this")
+                      dest="isdaemonize", default=False, help="Daemonize this")
 
     parser.add_option("-m", "--maxla", action="store",
-                     dest="maxla", default=-1, help="Maximum load average to start working. Default: -1")
+                      dest="maxla", default=-1,
+                      help="Maximum load average to start working (-1).")
 
     parser.add_option("-s", "--sleep", action="store_true",
-                     dest="want_to_sleep", default=False, help="Yes, I want to sleep before work")
+                      dest="want_to_sleep", default=False,
+                      help="Yes, I want to sleep before work")
 
     parser.add_option("-w", "--wait", action="store", type=float,
-                     dest="waittime", default=None, help="Try to acquire lock for some seconds")
-    
+                      dest="waittime", default=None,
+                      help="Try to acquire lock for some seconds")
+
     parser.add_option("-x", "--exitcode", action="store", type=int,
-                     dest="exitcode", default=0, help="Exit code in case we were unable to acquire lock. Default: 0")
+                      dest="exitcode", default=0,
+                      help="Exit code if lock isn't acquired (0).")
     (options, args) = parser.parse_args()
 
     if len(args) == 2:
@@ -273,25 +309,27 @@ if __name__ == "__main__":
         print "Wrong count of arguments"
         parser.print_help()
         sys.exit(1)
-    
-    # Config parsing
+
     cfg = read_cfg(options.confpath)
     if cfg is None:
         print "Unable to read configuration file: %s" % options.confpath
         sys.exit(1)
+
     initialize_logger(cfg['path'], cfg['level'])
-    cfg['name'] = pid_name # lockname
+    cfg['name'] = pid_name  # lockname
 
     # Sleep
     want_to_sleep = cfg.get("sleep", "ON" if options.want_to_sleep else "OFF")
     if want_to_sleep not in ("ON", "OFF"):
-        print "Available values for sleep are ON/OFF, not a %s " % want_to_sleep
+        LOGGER.info("Available values for sleep are ON/OFF, not a %s",
+                    want_to_sleep)
         sys.exit(1)
-    
+
     # Read maxla
     maxla = cfg.get("maxla", options.maxla)
-    if (maxla > 0) and (maxla <= get_la()):
-        LOGGER.info("Too much load averaga. Max la: %f, Current la: %f" % (maxla, get_la()))
+    if (0 < maxla <= get_la()):
+        LOGGER.info("la is more then limit. Max la %f, current la %f",
+                    maxla, get_la())
         sys.exit(0)
 
     if want_to_sleep == "ON":

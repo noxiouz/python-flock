@@ -36,11 +36,12 @@ class ZKLockServer(object):
             if (res != ZK.zookeeper.NODEEXISTS) and (res < 0):
                 if res == ZK.DEFAULT_ERRNO:
                     self.log.error("Unexpectable error")
-                    raise Exception("Unexpectable error. See Zookeeper logs for details")
+                    raise Exception("Unexpectable error. See Zookeeper logs")
                 else:
-                    msg = "Zookeeper error number %d: %s" % (res, ZK.zookeeper.zerror(res))
+                    msg = "Zookeeper error: %s" % ZK.zookeeper.zerror(res)
                     self.log.error(msg)
                     raise Exception(msg)
+
             self.lock = config['name']
             self.lockpath = '/%s/%s' % (self.id, self.lock)
             self.locked = False
@@ -81,7 +82,7 @@ class ZKLockServer(object):
             content = self.zkclient.read(self.lockpath)
             return content == self.lock_content
         except Exception as err:
-            self.log.error("Unable to check lock %s", err)
+            self.log.error("Unable to check lock %s", repr(err))
         return False
 
     def set_async_checkLock(self, callback):
@@ -94,8 +95,7 @@ class ZKLockServer(object):
             if self.checkLock:
                 self.zkclient.aget(self.lockpath, callback_wrapper)
 
-        if self.zkclient.aget(self.lockpath, callback_wrapper) == 0:
-            return True
+        return self.zkclient.aget(self.lockpath, callback_wrapper)
 
     def set_node_deleting_watcher(self, path, callback):
         assert callable(callback), "callback must be callable"

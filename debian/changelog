@@ -1,108 +1,108 @@
-zk-flock (0.1-beta18) lucid; urgency=low
+zk-flock (0.1-beta18) unstable; urgency=low
 
   * fix type of command line option Default 
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Thu, 01 Aug 2013 12:33:41 +0400
 
-zk-flock (0.1-beta17) lucid; urgency=low
+zk-flock (0.1-beta17) unstable; urgency=low
 
   * Added exitcode commandline option
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Tue, 30 Jul 2013 18:46:33 +0400
 
-zk-flock (0.1-beta16) lucid; urgency=low
+zk-flock (0.1-beta16) unstable; urgency=low
 
   * transport zookeeper module into watcher handler (looks like bug) 
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Tue, 09 Jul 2013 16:30:03 +0400
 
-zk-flock (0.1-beta15) lucid; urgency=low
+zk-flock (0.1-beta15) unstable; urgency=low
 
   * assert on zookeeper is None 
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Mon, 08 Jul 2013 17:49:43 +0400
 
-zk-flock (0.1-beta14) lucid; urgency=low
+zk-flock (0.1-beta14) unstable; urgency=low
 
   * add --wait/ -w option: try to acquire lock for some seconds
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Sun, 23 Jun 2013 23:23:22 +0400
 
-zk-flock (0.1-beta13) lucid; urgency=low
+zk-flock (0.1-beta13) unstable; urgency=low
 
   * add python-support deps
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Fri, 21 Jun 2013 01:27:32 +0400
 
-zk-flock (0.1-beta12) lucid; urgency=low
+zk-flock (0.1-beta12) unstable; urgency=low
 
   * fix debianization under precise 
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Fri, 21 Jun 2013 01:11:04 +0400
 
-zk-flock (0.1-beta11) lucid; urgency=low
+zk-flock (0.1-beta11) unstable; urgency=low
 
   * More logging about Zookeeper exceptions.
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Fri, 24 May 2013 02:19:12 +0400
 
-zk-flock (0.1-beta10) lucid; urgency=low
+zk-flock (0.1-beta10) unstable; urgency=low
 
   * Change TimedRotatedFileHandler to WatchedFileHandler - use your own
   rotating scripts
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Mon, 13 May 2013 21:58:38 +0400
 
-zk-flock (0.1-beta9) lucid; urgency=low
+zk-flock (0.1-beta9) unstable; urgency=low
 
   * work on returned codes 
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Tue, 07 May 2013 16:11:43 +0400
 
-zk-flock (0.1-beta8) lucid; urgency=low
+zk-flock (0.1-beta8) unstable; urgency=low
 
   * default logging to /dev/null 
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Mon, 15 Apr 2013 00:49:21 +0400
 
-zk-flock (0.1-beta7) lucid; urgency=low
+zk-flock (0.1-beta7) unstable; urgency=low
 
   * now reconnects to another zk-server if currently server is down (EXPERIMENTAL)
   * add logging (ZooClient and zk-flock)
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Mon, 15 Apr 2013 00:18:15 +0400
 
-zk-flock (0.1-beta6) lucid; urgency=low
+zk-flock (0.1-beta6) unstable; urgency=low
 
   * supress some prints 
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Thu, 28 Feb 2013 17:20:20 +0400
 
-zk-flock (0.1-beta5) lucid; urgency=low
+zk-flock (0.1-beta5) unstable; urgency=low
 
   * Async lock check 
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Fri, 08 Feb 2013 01:24:06 +0400
 
-zk-flock (0.1-beta4) lucid; urgency=low
+zk-flock (0.1-beta4) unstable; urgency=low
 
   * Add handling for SIGTERM and SIGCHLD. Remove process.poll() for check alive 
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Thu, 07 Feb 2013 03:26:06 +0400
 
-zk-flock (0.1-beta3) lucid; urgency=low
+zk-flock (0.1-beta3) unstable; urgency=low
 
   * add daemonize and configpath options 
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Thu, 31 Jan 2013 00:44:15 +0400
 
-zk-flock (0.1-beta2) lucid; urgency=low
+zk-flock (0.1-beta2) unstable; urgency=low
 
   * fix of while. Clean unused part of daemon.  Add 1sec timeout
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Fri, 25 Jan 2013 22:35:43 +0400
 
-zk-flock (0.1-beta1) lucid; urgency=low
+zk-flock (0.1-beta1) unstable; urgency=low
 
   * aisohf 
 

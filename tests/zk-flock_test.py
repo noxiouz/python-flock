@@ -1,9 +1,10 @@
 #! /usr/bin/env python
 
 import os
+import shlex
 import subprocess
-import unittest
 import time
+import unittest
 
 
 def check_pid(pid):
@@ -12,20 +13,25 @@ def check_pid(pid):
     try:
         os.kill(pid, 0)
     except OSError as err:
+        print(err)
         return False
     else:
         return True
 
+
 class firsttest(unittest.TestCase):
 
     def setUp(self):
-        import shlex
         args = shlex.split("python zk-flock ffffff \"sleep 3600\" -d")
         self.p = subprocess.Popen(args)
         time.sleep(2)
-        x = subprocess.Popen("ps aux | grep \"zk-flock\" | grep sleep | grep -v grep | awk '{print $2}'", shell=True, stdout=subprocess.PIPE)
-        self.PID = int(x.stdout.read())
-        x = subprocess.Popen("ps aux | grep sleep | grep -v grep | grep -v python | awk '{print $2}'", shell=True, stdout=subprocess.PIPE)
+        x = subprocess.Popen("ps aux | grep \"zk-flock\" | grep sleep | grep -v grep | awk '{print $2}'",
+                             shell=True, stdout=subprocess.PIPE)
+        output = x.stdout.read()
+        print output
+        self.PID = int(output)
+        x = subprocess.Popen("ps aux | grep sleep | grep -v grep | grep -v python | awk '{print $2}'",
+                             shell=True, stdout=subprocess.PIPE)
         self.CHILD_PID = int(x.stdout.read())
 
     def test_kill_him(self):
