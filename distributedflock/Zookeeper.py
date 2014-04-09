@@ -25,14 +25,14 @@ import uuid
 
 import logging
 
-class ZKLockServer():
-    """Zookeeper based lockserver. """
+
+class ZKLockServer(object):
     def __init__(self, **config):
         try:
-            self.log = logging.getLogger(config.get('logger_name','combaine'))
+            self.log = logging.getLogger(config.get('logger_name', 'combaine'))
             self.zkclient = ZK.ZKeeperClient(**config)
             self.id = config['app_id']
-            res = self.zkclient.write('/'+self.id,"Rootnode")
+            res = self.zkclient.write('/%s' % self.id, "Rootnode")
             if (res != ZK.zookeeper.NODEEXISTS) and (res < 0):
                 if res == ZK.DEFAULT_ERRNO:
                     self.log.error("Unexpectable error")
@@ -42,11 +42,11 @@ class ZKLockServer():
                     self.log.error(msg)
                     raise Exception(msg)
             self.lock = config['name']
-            self.lockpath = '/'+self.id+'/'+self.lock
+            self.lockpath = '/%s/%s' % (self.id, self.lock)
             self.locked = False
             self.lock_content = gethostname() + str(uuid.uuid4())
         except Exception as err:
-            self.log.error('Failed to init ZKLockServer: '+str(err))
+            self.log.error('Failed to init ZKLockServer: %s', err)
             raise
         else:
             self.log.debug('ZK create')
@@ -54,7 +54,7 @@ class ZKLockServer():
     def getlock(self):
         if self.locked:
             return True
-        if self.zkclient.write(self.lockpath, self.lock_content,1) == 0:
+        if self.zkclient.write(self.lockpath, self.lock_content, 1) == 0:
             self.log.info('Lock: success')
             self.locked = True
             return True
@@ -64,34 +64,31 @@ class ZKLockServer():
 
     def setLockName(self, name):
         self.lock = name
-        self.lockpath = '/'+self.id+'/'+self.lock
+        self.lockpath = '/%s/%s' % (self.id, self.lock)
 
     def releaselock(self):
-        if self.zkclient.delete(self.lockpath) ==0:
-            self.log.info('Unlock: success')
+        try:
+            self.zkclient.delete(self.lockpath)
+            self.log.info('Unlocked successfully')
             self.locked = False
             return True
-        else:
-            self.log.debug('Unlock: fail')
-            return False
+        except Exception as err:
+            self.log.error('Unlocking failed %s', err)
+        return False
 
     def checkLock(self):
         try:
-            isMyLock = self.zkclient.read(self.lockpath)
-            if isMyLock[0] != self.lock_content:
-                return False
-            else:
-                return True
+            content = self.zkclient.read(self.lockpath)
+            return content == self.lock_content
         except Exception as err:
-            self.log.debug("lock isn't mine")
-            return False
-        else:
-            return True#isMyLock
+            self.log.error("Unable to check lock %s", err)
+        return False
 
     def set_async_checkLock(self, callback):
+        assert callable(callback), "callback must be callable"
         if not self.locked:
             return False
-        assert callable(callback)
+
         def callback_wrapper(*args):
             callback()
             if self.checkLock:
@@ -101,19 +98,18 @@ class ZKLockServer():
             return True
 
     def set_node_deleting_watcher(self, path, callback):
-        assert callable(callback)
+        assert callable(callback), "callback must be callable"
+
         def callback_wrapper(event, state, path):
-            if event == 2: # zookeeper.DELETE_EVENT
+            if event == 2:  # zookeeper.DELETE_EVENT
                 callback()
-        if self.zkclient.aget(path, callback_wrapper) == 0:
-            return True
-        else:
-            return False
+        return self.zkclient.aget(path, callback_wrapper)
 
     def destroy(self):
-        if self.zkclient.disconnect() == 0:
-            self.log.info('Successfully disconnect from LS')
+        try:
+            self.zkclient.disconnect()
+            self.log.info('Disconnected successfully')
             return True
-        else:
-            self.log.debug('Cannot disconnect from LS')
-            return False
+        except Exception as err:
+            self.log.error('Disconnection error %s', err)
+        return False
