@@ -18,35 +18,47 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import threading
-import time
-import logging
+from __future__ import with_statement
+
 from functools import partial
+import logging
+import threading
 
 import zookeeper
 
-ZK_ACL = {"perms":0x1f, "scheme":"world", "id":"anyone"}
+ZK_ACL = {"perms": 0x1f,
+          "scheme": "world",
+          "id": "anyone"}
 
-zookeeper.set_log_stream(open('/dev/null','w'))
+zookeeper.set_log_stream(open('/dev/null', 'w'))
 
 DEFAULT_ERRNO = -9999
 
 # JFYI
-LOG_LEVELS = {  "DEBUG" : zookeeper.LOG_LEVEL_DEBUG,
-                "INFO"  : zookeeper.LOG_LEVEL_INFO,
-                "WARN"  : zookeeper.LOG_LEVEL_WARN,
-                "ERROR" : zookeeper.LOG_LEVEL_ERROR,
-}
+LOG_LEVELS = {"DEBUG": zookeeper.LOG_LEVEL_DEBUG,
+              "INFO": zookeeper.LOG_LEVEL_INFO,
+              "WARN": zookeeper.LOG_LEVEL_WARN,
+              "ERROR": zookeeper.LOG_LEVEL_ERROR}
 
 
 class Null(object):
     """This class does nothing as logger"""
 
-    def __init__(self, *args, **kwargs): pass
-    def __call__(self, *args, **kwargs): return self
-    def __getattribute__(self, name): return self
-    def __setattribute__(self, name, value): pass
-    def __delattribute__(self, name): pass
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __call__(self, *args, **kwargs):
+        return self
+
+    def __getattribute__(self, name):
+        return self
+
+    def __setattribute__(self, name, value):
+        pass
+
+    def __delattribute__(self, name):
+        pass
+
 
 def handling_error(zkfunc, logger=Null()):
     def wrapper(*args, **kwargs):
@@ -55,31 +67,32 @@ def handling_error(zkfunc, logger=Null()):
         try:
             ret = zkfunc(*args, **kwargs)
         except zookeeper.ConnectionLossException as err:
-            logger.error("ConectionLossException: %s" % str(err))
+            logger.error("ConectionLossException: %s", str(err))
             errno = zookeeper.CONNECTIONLOSS
         except zookeeper.NodeExistsException as err:
-            logger.debug("Node exists: %s" % str(err))
+            logger.debug("Node exists: %s", str(err))
             errno = zookeeper.NODEEXISTS
         except zookeeper.OperationTimeoutException as err:
-            logger.error("Operation timeout: %s" % str(err))
+            logger.error("Operation timeout: %s", str(err))
             errno = zookeeper.OPERATIONTIMEOUT
         except zookeeper.RuntimeInconsistencyException as err:
-            logger.error("RuntimeInconsistency: %s" % str(err))
+            logger.error("RuntimeInconsistency: %s", str(err))
             errno = zookeeper.RUNTIMEINCONSISTENCY
         except zookeeper.MarshallingErrorException as err:
             logger.error(str(err))
             errno = zookeeper.MARSHALLINGERROR
         except zookeeper.ZooKeeperException as err:
-            logger.error("ZookeperException %s" % str(err))
+            logger.error("ZookeperException %s", str(err))
         except Exception as err:
-            logger.exception("Unknown exception %s" % str(err))
+            logger.exception("Unknown exception %s", str(err))
         else:
             errno = 0
         finally:
             return ret, errno
     return wrapper
 
-class ZKeeperClient():
+
+class ZKeeperClient(object):
     def __init__(self, **config):
         if config.has_key('logger_name'):
             self.logger = logging.getLogger(config['logger_name'])
@@ -88,17 +101,19 @@ class ZKeeperClient():
 
         # zookeeper client log
         try:
-            zklogfile_path, zklog_level = config.get("ZookeeperLog", ("/dev/stderr", "WARN"))
-            _f = open(zklogfile_path,'a')
+            zklogfile_path, zklog_level = config.get("ZookeeperLog",
+                                                     ("/dev/stderr", "WARN"))
+            _f = open(zklogfile_path, 'a')
         except Exception as err:
             self.logger.error("In init ZKeeperClient: %s" % str(err))
         else:
             zookeeper.set_log_stream(_f)
-            zookeeper.set_debug_level(LOG_LEVELS.get(zklog_level, zookeeper.LOG_LEVEL_WARN))
+            zookeeper.set_debug_level(LOG_LEVELS.get(zklog_level,
+                                                     zookeeper.LOG_LEVEL_WARN))
 
         try:
             self.connection_timeout = config['timeout']
-            self.zkhosts = config['host']
+            self.zkhosts = ','.join(config['host'])
         except KeyError as err:
             self.logger.exception("Cann't init ZKeeperClient: %s" % str(err))
 
@@ -110,34 +125,32 @@ class ZKeeperClient():
     def connect(self):
         self.cv = threading.Condition()
         self.connected = False
-        def connect_watcher(handle, type, state, path ):
+
+        def connect_watcher(handle, type, state, path):
             """ Callback for connect()"""
             self.cv.acquire()
             self.connected = True
             self.cv.notify()
             self.cv.release()
 
-        self.cv.acquire()
-        zkserver = ','.join(self.zkhosts)
-        try:
-            self.zkhandle = handling_error(zookeeper.init, self.logger)(zkserver, connect_watcher)[0]
-        except Exception as err:
-            self.logger.exception("In ZKeeperClient.connect(): %s" % str(err))
-        else:
-            self.cv.wait(self.connection_timeout)
-        finally:
-            self.cv.release()
+        with self.cv:
+            try:
+                self.zkhandle = zookeeper.init(self.zkhosts, connect_watcher)
+            except Exception as err:
+                self.logger.exception("ZKeeperClient.connect(): %s", err)
+            else:
+                self.cv.wait(self.connection_timeout)
         return self.connected
 
     def disconnect(self):
         return handling_error(zookeeper.close, self.logger)(self.zkhandle)[1]
 
     def write(self, absname, value, typeofnode=0, acl=ZK_ACL):
-        return handling_error(zookeeper.create, self.logger)(self.zkhandle,\
-                                                        absname,\
-                                                        value,\
-                                                        [acl],\
-                                                        typeofnode)[1];
+        return handling_error(zookeeper.create, self.logger)(self.zkhandle,
+                                                             absname,
+                                                             value,
+                                                             [acl],
+                                                             typeofnode)[1]
 
     def read(self, absname):
         _res = handling_error(zookeeper.get, self.logger)(self.zkhandle, absname)
@@ -145,7 +158,8 @@ class ZKeeperClient():
         return res
 
     def list(self, absname):
-        res = handling_error(zookeeper.get_children, self.logger)(self.zkhandle, absname)
+        res = handling_error(zookeeper.get_children, self.logger)(self.zkhandle,
+                                                                  absname)
         return res
 
     def modify(self, absname, value):
@@ -158,15 +172,15 @@ class ZKeeperClient():
     def aget(self, node, callback):
         if not callable(callback):
             return None
+
         def watcher(self, zh, event, state, path):
             self.logger.info("Node state has been changed")
-            #print "event", event
             if event == zookeeper.CHANGED_EVENT:
-                self.logger.debug("Node %s has been modified" % str(path))
+                self.logger.debug("Node %s has been modified", str(path))
             elif event == zookeeper.CREATED_EVENT:
-                self.logger.debug("Node %s has been created" % str(path))
+                self.logger.debug("Node %s has been created", str(path))
             elif event == zookeeper.DELETED_EVENT:
-                self.logger.warning("Node %s has been deleted" % str(path))
+                self.logger.warning("Node %s has been deleted", str(path))
 
             if state == zookeeper.EXPIRED_SESSION_STATE:
                 self.logger.error("Session expired")
@@ -177,5 +191,5 @@ class ZKeeperClient():
         if zkmodule.OK == rc:
             self.logger.debug("Callback was attached succesfully")
         else:
-           if zkmodule.NONODE == rc:
+            if zkmodule.NONODE == rc:
                 self.logger.error("Watched node doesn't exists")
