@@ -196,34 +196,49 @@ def notifier(cv):
     cv.release()
 
 
-def main(cmd_arg, zk_cfg, period=None, exitcode=0):
-
+def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0):
     try:
         z = ZK.ZKLockServer(**cfg)
     except Exception as err:
         print err
         sys.exit(1)
 
-    if not z.getlock():
-        if period is None:
+    if sequence > 0:
+        LOGGER.debug("Sequence lock %d", sequence)
+        base_lock_name = cfg["name"]
+        for i in xrange(0, sequence):
+            sequence_lock_name = "%s_%d" % (base_lock_name, i)
+            z.setLockName(sequence_lock_name)
+            print sequence_lock_name
+            if not z.getlock():
+                LOGGER.debug("Lock %s is busy", sequence_lock_name)
+                continue
+            else:
+                break
+        if not z.checkLock():
             LOGGER.debug("Unable to acquire lock. Do exit")
             sys.exit(exitcode)
-        else:
-            LOGGER.info("Try to wait %d sec" % period)
-            limit_time = time.time() + period
-            cond_var = Condition()
-            watcher = partial(notifier, cond_var)
-            while limit_time - time.time() > 0.1:
-                time_to_wait = limit_time - time.time()
-                z.set_node_deleting_watcher(z.lockpath, watcher)
-                cond_var.acquire()
-                cond_var.wait(time_to_wait)
-                cond_var.release()
-                if z.getlock():
-                    break
-            if not z.checkLock():
+    else:
+        if not z.getlock():
+            if period is None:
                 LOGGER.debug("Unable to acquire lock. Do exit")
                 sys.exit(exitcode)
+            else:
+                LOGGER.info("Try to wait %d sec" % period)
+                limit_time = time.time() + period
+                cond_var = Condition()
+                watcher = partial(notifier, cond_var)
+                while limit_time - time.time() > 0.1:
+                    time_to_wait = limit_time - time.time()
+                    z.set_node_deleting_watcher(z.lockpath, watcher)
+                    cond_var.acquire()
+                    cond_var.wait(time_to_wait)
+                    cond_var.release()
+                    if z.getlock():
+                        break
+                if not z.checkLock():
+                    LOGGER.debug("Unable to acquire lock. Do exit")
+                    sys.exit(exitcode)
 
     cv = Condition()
 
@@ -300,6 +315,10 @@ if __name__ == "__main__":
     parser.add_option("-x", "--exitcode", action="store", type=int,
                       dest="exitcode", default=0,
                       help="Exit code if lock isn't acquired (0).")
+
+    parser.add_option("-n", "", action="store", type=int,
+                      dest="sequence", default=0,
+                      help="Sequence of locks")
     (options, args) = parser.parse_args()
 
     if len(args) == 2:
@@ -330,7 +349,7 @@ if __name__ == "__main__":
     if (0 < maxla <= get_la()):
         LOGGER.info("la is more then limit. Max la %f, current la %f",
                     maxla, get_la())
-        sys.exit(0)
+        sys.exit(1)
 
     if want_to_sleep == "ON":
         time.sleep(get_la())
@@ -338,6 +357,8 @@ if __name__ == "__main__":
     if options.isdaemonize:
         daemon = Daemon()
         daemon.run = main
-        daemon.start(cmd_arg, cfg, options.waittime)
+        daemon.start(cmd_arg, cfg, options.waittime,
+                     options.exitcode, options.sequence)
     else:
-        main(cmd_arg, cfg, options.waittime, options.exitcode)
+        main(cmd_arg, cfg, options.waittime,
+             options.exitcode, options.sequence)
