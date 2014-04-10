@@ -273,9 +273,9 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0):
         LOGGER.error("Unable to attach async watcher for lock")
         sys.exit(1)
 
-    p = start_child(cmd_arg)
     signal.signal(signal.SIGTERM, sigterm_and_sigchld_handle)
     signal.signal(signal.SIGCHLD, sigterm_and_sigchld_handle)
+    p = start_child(cmd_arg)
     while True:
         with cv:
             cv.wait(100)

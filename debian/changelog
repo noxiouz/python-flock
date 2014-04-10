@@ -1,3 +1,9 @@
+zk-flock (0.1.2.1) unstable; urgency=low
+
+  * Fix bug with shortliving childs.
+
+ -- Anton Tyurin <noxiouz@yandex-team.ru>  Thu, 10 Apr 2014 15:13:21 +0400
+
 zk-flock (0.1.2.0) unstable; urgency=low
 
   * Introduce -n option.
