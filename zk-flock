@@ -242,7 +242,7 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0):
 
     cv = Condition()
 
-    def sigterm_and_sigchld_handle(signum, frame):
+    def sigterm_and_sigchld_handle(p, signum, frame):
         # TBD - split by two handlers for each signal
         if signum == signal.SIGTERM:
             LOGGER.info("Stop work by SIGTERM")
@@ -273,9 +273,13 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0):
         LOGGER.error("Unable to attach async watcher for lock")
         sys.exit(1)
 
-    signal.signal(signal.SIGTERM, sigterm_and_sigchld_handle)
-    signal.signal(signal.SIGCHLD, sigterm_and_sigchld_handle)
     p = start_child(cmd_arg)
+    signal.signal(signal.SIGTERM, partial(sigterm_and_sigchld_handle, p))
+    signal.signal(signal.SIGCHLD, partial(sigterm_and_sigchld_handle, p))
+    if p.poll() is not None:
+        LOGGER.error("Child process exited")
+        sys.exit(1)
+
     while True:
         with cv:
             cv.wait(100)
