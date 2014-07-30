@@ -2,9 +2,9 @@ Source: zk-flock
 Section: misc
 Priority: extra
 Maintainer: Anton Tyurin <noxiouz@yandex.ru>
-Build-Depends: cdbs, debhelper ( >= 7),
+Build-Depends: debhelper ( >= 7),
  python (>= 2.6),
- python-central
+ python-central | dh-python
 Standards-Version: 3.9.1
 XS-Python-Version: >= 2.6
 Homepage: https://github.com/noxiouz/python-flock
