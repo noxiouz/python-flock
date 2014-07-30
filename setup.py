@@ -19,14 +19,11 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import setup
 
 setup(
     name="zk-flock",
-    version="0.1.0",
+    version="0.1.2.2",
     author="Anton Tyurin",
     author_email="noxiouz@yandex.ru",
     url="https://github.com/noxiouz/python-flock",
@@ -40,6 +37,5 @@ setup(
     ],
     requires=[
         "zookeeper"
-    ],
-    test_suite="tests"
+    ]
 )
