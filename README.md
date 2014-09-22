@@ -4,16 +4,16 @@ Configuration
 You have to write the configuration file **/etc/distributed-flock.json** with the following content:
 ```js
 {
-    "host"      :   ["hostname1:2181","hostname2:2181","hostname3:2181"],
-    "timeout"   :   5,
-    "app_id"    :   "my_application_namespace",
-    "sleep"     :   "ON",    //ON or OFF - Default OFF
-    "maxla"     :   30,      // If >=0 -> max loadaverage for work. Default -1
-    "logger"    :   {
-            "path"      :   "/tmp/zkflock.log",
-            "level"     :   "INFO",        
-            "zklevel"   :   "ERROR"
-        }
+    "host": ["hostname1:2181","hostname2:2181","hostname3:2181"],
+    "timeout": 5,
+    "app_id": "my_application_namespace",
+    "sleep": "ON",    //ON or OFF - Default OFF
+    "maxla": 30,      // If >=0 -> max loadaverage for work. Default -1
+    "logger": {
+            "path": "/tmp/zkflock.log",
+            "level": "INFO",        
+            "zklevel": "ERROR"
+    }
 }
 ```
  * **host** - list of Zookeeper nodes
