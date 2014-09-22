@@ -12,8 +12,7 @@ def check_pid(pid):
         return False
     try:
         os.kill(pid, 0)
-    except OSError as err:
-        print(err)
+    except OSError:
         return False
     else:
         return True
@@ -25,12 +24,13 @@ class firsttest(unittest.TestCase):
         args = shlex.split("python zk-flock ffffff \"sleep 3600\" -d")
         self.p = subprocess.Popen(args)
         time.sleep(2)
-        x = subprocess.Popen("ps aux | grep \"zk-flock\" | grep sleep | grep -v grep | awk '{print $2}'",
+        x = subprocess.Popen("ps aux | grep \"zk-flock\" | grep sleep"
+                             "| grep -v grep | awk '{print $2}'",
                              shell=True, stdout=subprocess.PIPE)
         output = x.stdout.read()
-        print output
         self.PID = int(output)
-        x = subprocess.Popen("ps aux | grep sleep | grep -v grep | grep -v python | awk '{print $2}'",
+        x = subprocess.Popen("ps aux | grep sleep | grep -v grep"
+                             "| grep -v python | awk '{print $2}'",
                              shell=True, stdout=subprocess.PIPE)
         self.CHILD_PID = int(x.stdout.read())
 

@@ -96,8 +96,6 @@ class ZKeeperClient(object):
     def __init__(self, **config):
         logger_name = config.get('logger_name')
         self.logger = logging.getLogger(logger_name) if logger_name else Null()
-
-        self.connected = False
         self.zkhandle = None
 
         try:
@@ -122,28 +120,41 @@ class ZKeeperClient(object):
             zookeeper.set_debug_level(LOG_LEVELS.get(zklog_level,
                                                      zookeeper.LOG_LEVEL_WARN))
 
-        if self.connect():
+        self.connect()
+        if zookeeper.state(self.zkhandle) == zookeeper.CONNECTED_STATE:
             self.logger.info('Connected to Zookeeper succesfully')
+        else:
+            raise zookeeper.ZooKeeperException('Unable to connect '
+                                               'to Zookeeper')
 
     def connect(self):
         self.cv = threading.Condition()
-        self.connected = False
 
-        def connect_watcher(handle, type, state, path):
-            """ Callback for connect()"""
-            self.cv.acquire()
-            self.connected = True
-            self.cv.notify()
-            self.cv.release()
+        def connect_watcher(handle, w_type, state, path):
+            """Callback for connect()"""
+            with self.cv:
+                if state == zookeeper.CONNECTED_STATE:
+                    self.logger.debug("connect_watcher: CONNECTED_STATE")
+                else:
+                    self.logger.debug("connect_watcher: state %d", state)
+                self.cv.notify()
 
         with self.cv:
             try:
-                self.zkhandle = zookeeper.init(self.zkhosts, connect_watcher)
+                # zookeeper.init accepts timeout in ms
+                recv_timeout = int(self.connection_timeout * 10e3)
+                self.zkhandle = zookeeper.init(self.zkhosts, connect_watcher,
+                                               recv_timeout)
             except Exception as err:
-                self.logger.exception("ZKeeperClient.connect(): %s", err)
+                self.logger.exception("Unable to init zookeeper: %s", err)
+                raise err
             else:
                 self.cv.wait(self.connection_timeout)
-        return self.connected
+
+    @property
+    def connected(self):
+        return self.zkhandle and\
+            zookeeper.state(self.zkhandle) == zookeeper.CONNECTED_STATE
 
     def disconnect(self):
         return zookeeper.close(self.zkhandle)

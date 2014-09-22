@@ -1,3 +1,14 @@
+zk-flock (0.1.3.0) unstable; urgency=low
+
+  * Handle with connection timeout properly: 
+    now it's passed to zookeeper.init
+  * Proper determination of connection state
+    state is compared with CONNECTED_STATE
+  * Small amount of typo fixes
+  * Get rid of useless variables
+
+ -- Anton Tyurin <noxiouz@yandex-team.ru>  Tue, 23 Sep 2014 02:35:16 +0400
+
 zk-flock (0.1.2.4) unstable; urgency=low
 
   * fix deps

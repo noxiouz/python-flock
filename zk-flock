@@ -19,19 +19,18 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import subprocess
-import sys
-import os
-import time
-import json
 import errno
-import optparse
-import shlex
+from functools import partial
+import json
 import logging
 import logging.handlers
-from functools import partial
-
+import os
+import optparse
+import shlex
+import subprocess
 import signal
+import sys
+import time
 from threading import Condition
 
 from distributedflock import Zookeeper as ZK
@@ -56,15 +55,15 @@ def logger_level_translator(func):
 
 @logger_level_translator
 def initialize_logger(path, level):
-    _format = logging.Formatter('%(asctime)s %(levelname)-8s\
-%(process)d %(message)s', "%Y-%m-%d %H:%M:%S")
+    _format = logging.Formatter('%(asctime)s %(levelname)-8s'
+                                '%(process)d %(message)s', '%Y-%m-%d %H:%M:%S')
     app_log = logging.getLogger('zk-flock')
     lhandler = logging.handlers.WatchedFileHandler(path, mode='a')
     lhandler.setFormatter(_format)
     lhandler.setLevel(level)
     app_log.addHandler(lhandler)
     app_log.setLevel(level)
-    app_log.info("Logger has been initialized succesfully")
+    app_log.info("Logger has been initialized successfully")
 
 
 class Daemon(object):
@@ -127,13 +126,13 @@ def start_child(cmd):
     try:
         p = subprocess.Popen(args, close_fds=True)
     except OSError as err:
-        LOGGER.error("Unable to start child process, because of %s" % err)
+        LOGGER.error("Unable to start child process, because of %s", err)
         sys.exit(1)
     except ValueError as err:
-        LOGGER.error("ValueError: %s" % str(err))
+        LOGGER.error("ValueError: %s", err)
         sys.exit(1)
     else:
-        LOGGER.info("Start subprocess: %s (PID: %d)" % (cmd, p.pid))
+        LOGGER.info("Start subprocess: %s (PID: %d)", cmd, p.pid)
         return p
 
 
@@ -200,6 +199,7 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0):
     try:
         z = ZK.ZKLockServer(**cfg)
     except Exception as err:
+        LOGGER.exception("%s", err)
         print err
         sys.exit(1)
 
@@ -249,7 +249,7 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0):
         elif signum == signal.SIGCHLD:
             LOGGER.info("Stop work by SIGCHLD")
         else:
-            LOGGER.info("Receive SIGNAL: %d" % signum)
+            LOGGER.info("Receive SIGNAL: %d", signum)
         try:
             z.releaselock()
         except Exception as err:
@@ -329,7 +329,7 @@ if __name__ == "__main__":
         pid_name = args[0]
         cmd_arg = args[1]
     else:
-        print "Wrong count of arguments"
+        print "Invalid number of arguments"
         parser.print_help()
         sys.exit(1)
 

@@ -19,11 +19,11 @@
 #
 
 
-from ZKeeperAPI import zkapi as ZK
-from socket import gethostname
+import logging
+import socket
 import uuid
 
-import logging
+from ZKeeperAPI import zkapi as ZK
 
 
 class ZKLockServer(object):
@@ -45,7 +45,7 @@ class ZKLockServer(object):
             self.lock = config['name']
             self.lockpath = '/%s/%s' % (self.id, self.lock)
             self.locked = False
-            self.lock_content = gethostname() + str(uuid.uuid4())
+            self.lock_content = socket.gethostname() + str(uuid.uuid4())
         except Exception as err:
             self.log.error('Failed to init ZKLockServer: %s', err)
             raise
