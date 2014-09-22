@@ -76,7 +76,7 @@ def kill_child(prcs):
     signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
     if prcs.poll() is not None:
-        LOGGER.info("Child returned code: %d (PID: %d)",
+        LOGGER.info("Child exited with code: %d (PID: %d)",
                     prcs.returncode, prcs.pid)
         return prcs.returncode
     elif prcs.poll() is None:
@@ -88,12 +88,12 @@ def kill_child(prcs):
             LOGGER.info("Send SIGKILL to child process (PID: %d)", prcs.pid)
         except OSError as err:
             if err.args[0] != errno.ESRCH:
-                # We try to kill child with two ways: kill and kill -9
-                # than sometimes kill -9 fail
-                # with no such process - so ignore it
+                # Trying to kill child two ways: kill and kill -9.
+                # Kill -9 may fail with no such process,
+                # so it should be ignored.
                 LOGGER.error("Kill child error: %s", err)
                 return
-        LOGGER.info("Killed child %d succesfully", prcs.pid)
+        LOGGER.info("Killed child %d successfully", prcs.pid)
 
 
 def read_cfg(path):
@@ -138,6 +138,7 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0):
         print err
         sys.exit(1)
 
+    # sequnce lock
     if sequence > 0:
         LOGGER.debug("Sequence lock %d", sequence)
         base_lock_name = cfg["name"]
@@ -154,11 +155,13 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0):
         if not z.checkLock():
             LOGGER.debug("Unable to acquire lock. Do exit")
             sys.exit(exitcode)
+    # unique lock
     else:
         if not z.getlock():
             if period is None:
                 LOGGER.debug("Unable to acquire lock. Do exit")
                 sys.exit(exitcode)
+            # trying to acquire the lock during timeout
             else:
                 LOGGER.info("Try to wait %d sec" % period)
                 limit_time = time.time() + period
