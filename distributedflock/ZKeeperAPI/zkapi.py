@@ -117,7 +117,7 @@ class ZKeeperClient(object):
                               zklogfile_path, err)
         else:
             zookeeper.set_log_stream(_f)
-            zookeeper.set_debug_level(LOG_LEVELS.get(zklog_level,
+            zookeeper.set_debug_level(LOG_LEVELS.get(zklog_level.upper(),
                                                      zookeeper.LOG_LEVEL_WARN))
 
         self.connect()

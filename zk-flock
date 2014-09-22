@@ -34,6 +34,7 @@ import time
 from threading import Condition
 
 from distributedflock import Zookeeper as ZK
+from distributedflock import Daemon
 
 DEFAULT_ZOOKEEPER_LOG_LEVEL = "WARN"
 DEFAULT_LOG_LEVEL = "INFO"
@@ -42,19 +43,8 @@ DEFAULT_LOGFILE_PATH = "/dev/null"
 LOGGER = logging.getLogger("zk-flock")
 
 
-def logger_level_translator(func):
-    _tr = {"DEBUG": logging.DEBUG,
-           "INFO": logging.INFO,
-           "ERROR": logging.ERROR,
-           "WARN": logging.WARNING}
-
-    def wrapper(path, level):
-        return func(path, _tr.get(level, logging.ERROR))
-    return wrapper
-
-
-@logger_level_translator
 def initialize_logger(path, level):
+    level = getattr(logging, level.upper(), logging.ERROR)
     _format = logging.Formatter('%(asctime)s %(levelname)-8s'
                                 '%(process)d %(message)s', '%Y-%m-%d %H:%M:%S')
     app_log = logging.getLogger('zk-flock')
@@ -64,61 +54,6 @@ def initialize_logger(path, level):
     app_log.addHandler(lhandler)
     app_log.setLevel(level)
     app_log.info("Logger has been initialized successfully")
-
-
-class Daemon(object):
-    def __init__(self, stdin='/dev/null',
-                 stdout='/dev/null', stderr='/dev/null'):
-        self.stdin = stdin
-        self.stdout = stdout
-        self.stderr = stderr
-
-    def daemonize(self):
-        """Double-fork magic"""
-        try:
-            pid = os.fork()
-            if pid > 0:
-                sys.exit(0)
-        except OSError, err:
-            sys.stderr.write("First fork failed: %d (%s)\n" % (err.errno,
-                                                               err.strerror))
-            sys.exit(1)
-        # decouple from parent environment
-        os.chdir("/")
-        os.setsid()
-        os.umask(0)
-
-        # Second fork
-        try:
-            pid = os.fork()
-            if pid > 0:
-                sys.exit(0)
-        except OSError, err:
-            sys.stderr.write("Second fork failed: %d (%s)\n" % (err.errno,
-                                                                err.strerror))
-            sys.exit(1)
-
-        sys.stdout.flush()
-        sys.stderr.flush()
-        si = file(self.stdin, 'r')
-        so = file(self.stdout, 'w')
-        se = file(self.stderr, 'w')
-        os.dup2(si.fileno(), sys.stdin.fileno())
-        os.dup2(so.fileno(), sys.stdout.fileno())
-        os.dup2(se.fileno(), sys.stderr.fileno())
-
-    def start(self, *args):
-        """
-        Start  the daemon
-        """
-
-        self.daemonize()
-        self.run(*args)
-
-    def run(self, *args):
-        pass
-
-#===========================================================
 
 
 def start_child(cmd):
@@ -209,6 +144,7 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0):
         for i in xrange(0, sequence):
             sequence_lock_name = "%s_%d" % (base_lock_name, i)
             z.setLockName(sequence_lock_name)
+            # do NOT remove this print
             print sequence_lock_name
             if not z.getlock():
                 LOGGER.debug("Lock %s is busy", sequence_lock_name)
