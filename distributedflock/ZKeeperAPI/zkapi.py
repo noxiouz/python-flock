@@ -142,14 +142,19 @@ class ZKeeperClient(object):
         with self.cv:
             try:
                 # zookeeper.init accepts timeout in ms
-                recv_timeout = int(self.connection_timeout * 10e3)
+                recv_timeout = int(self.connection_timeout * 1e3)
                 self.zkhandle = zookeeper.init(self.zkhosts, connect_watcher,
                                                recv_timeout)
             except Exception as err:
                 self.logger.exception("Unable to init zookeeper: %s", err)
                 raise err
             else:
-                self.cv.wait(self.connection_timeout)
+                while True:
+                    self.logger.debug("Connecting to Zookeeper... Wait %d",
+                                      self.connection_timeout)
+                    self.cv.wait(self.connection_timeout)
+                    if zookeeper.state(self.zkhandle) != zookeeper.CONNECTING_STATE:
+                        break
 
     @property
     def connected(self):

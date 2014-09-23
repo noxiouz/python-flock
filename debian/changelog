@@ -1,3 +1,10 @@
+zk-flock (0.1.3.1) unstable; urgency=low
+
+  * It works with -j DROP now
+  * Fix: timeout is fixed.
+
+ -- Anton Tyurin <noxiouz@yandex-team.ru>  Tue, 23 Sep 2014 17:14:22 +0400
+
 zk-flock (0.1.3.0) unstable; urgency=low
 
   * Handle with connection timeout properly: 
