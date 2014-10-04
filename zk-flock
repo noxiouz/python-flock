@@ -190,7 +190,7 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0):
         else:
             LOGGER.info("Receive SIGNAL: %d", signum)
         try:
-            z.releaselock()
+            z.destroy()
         except Exception as err:
             LOGGER.debug(str(err))
         finally:
