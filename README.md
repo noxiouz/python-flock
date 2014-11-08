@@ -11,14 +11,18 @@ You have to write the configuration file **/etc/distributed-flock.json** with th
     "maxla": 30,      // If >=0 -> max loadaverage for work. Default -1
     "logger": {
             "path": "/tmp/zkflock.log",
-            "level": "INFO",        
+            "level": "INFO",
             "zklevel": "ERROR"
+    },
+    "auth": {
+        "scheme": "digest",
+        "data": "noxiouz:password"
     }
 }
 ```
  * **host** - list of Zookeeper nodes
  * **timeout** - timeout for zookeper connection (sec)
- * **app_id** - namespace for your application in Zookeeper. This means that the lock will be stored  
+ * **app_id** - namespace for your application in Zookeeper. This means that the lock will be stored
                 in Zookeeper with path likes **/app_id/your_lock_name**
  * **sleep** - Sleep before work. Default: "OFF". Switch "ON" by -s (--sleep).
  * **maxla** - Maximal load average. Use if >=0. Default: -1. Set by -m (--maxla).
