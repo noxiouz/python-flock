@@ -1,16 +1,7 @@
 #!/usr/bin/make -f
 
 version=$(shell lsb_release -r | cut -f2 | cut -d'.' -f1)
-ifeq ($(version),14)
 # trusty
 %:
-	dh $@ --with python2
-else
-# precise and lucid
-DEB_PYTHON_SYSTEM=pycentral
-DEB_COMPRESS_EXCLUDE=.py
-
-include /usr/share/cdbs/1/rules/debhelper.mk
-include /usr/share/cdbs/1/class/python-distutils.mk
-endif
+	dh $@
 
