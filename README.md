@@ -37,7 +37,7 @@ Usage
 
 To run the application under the supervision of the zk-flock use the command:
 ```bash
-zk-flock <pidname> <application coomand>
+zk-flock <pidname> <application command>
 ```
 
 If your application requires command-line arguments enclose it in double quotes:
