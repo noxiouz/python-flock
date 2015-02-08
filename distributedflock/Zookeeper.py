@@ -23,22 +23,22 @@ import logging
 import socket
 import uuid
 
-from ZKeeperAPI import zkapi as ZK
+from ZKeeperAPI import zkapi
 
 
 class ZKLockServer(object):
     def __init__(self, **config):
         try:
             self.log = logging.getLogger(config.get('logger_name', 'combaine'))
-            self.zkclient = ZK.ZKeeperClient(**config)
+            self.zkclient = zkapi.ZKeeperClient(**config)
             self.id = config['app_id']
             res = self.zkclient.write('/%s' % self.id, "Rootnode")
-            if (res != ZK.zookeeper.NODEEXISTS) and (res < 0):
-                if res == ZK.DEFAULT_ERRNO:
+            if (res != zkapi.zookeeper.NODEEXISTS) and (res < 0):
+                if res == zkapi.DEFAULT_ERRNO:
                     self.log.error("Unexpectable error")
                     raise Exception("Unexpectable error. See Zookeeper logs")
                 else:
-                    msg = "Zookeeper error: %s" % ZK.zookeeper.zerror(res)
+                    msg = "Zookeeper error: %s" % zkapi.zookeeper.zerror(res)
                     self.log.error(msg)
                     raise Exception(msg)
 
@@ -50,7 +50,7 @@ class ZKLockServer(object):
             self.log.error('Failed to init ZKLockServer: %s', err)
             raise
         else:
-            self.log.debug('ZK create')
+            self.log.debug('ZKeeperClient has been created')
 
     def getlock(self):
         if self.locked:
@@ -63,7 +63,7 @@ class ZKLockServer(object):
             self.log.info('Lock: fail')
             return False
 
-    def setLockName(self, name):
+    def set_lock_name(self, name):
         self.lock = name
         self.lockpath = '/%s/%s' % (self.id, self.lock)
 
@@ -77,7 +77,7 @@ class ZKLockServer(object):
             self.log.error('Unlocking failed %s', err)
         return False
 
-    def checkLock(self):
+    def check_lock(self):
         try:
             content = self.zkclient.read(self.lockpath)
             return content == self.lock_content
@@ -85,14 +85,14 @@ class ZKLockServer(object):
             self.log.error("Unable to check lock %s", repr(err))
         return False
 
-    def set_async_checkLock(self, callback):
+    def set_async_check_lock(self, callback):
         assert callable(callback), "callback must be callable"
         if not self.locked:
             return False
 
         def callback_wrapper(*args):
             callback()
-            if self.checkLock:
+            if self.check_lock():
                 self.zkclient.aget(self.lockpath, callback_wrapper)
 
         return self.zkclient.aget(self.lockpath, callback_wrapper)

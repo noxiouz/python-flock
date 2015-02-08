@@ -33,7 +33,7 @@ import sys
 import time
 from threading import Condition
 
-from distributedflock import Zookeeper as ZK
+from distributedflock import Zookeeper
 from distributedflock import Daemon
 
 DEFAULT_ZOOKEEPER_LOG_LEVEL = "WARN"
@@ -132,7 +132,7 @@ def notifier(cv):
 
 def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0):
     try:
-        z = ZK.ZKLockServer(**cfg)
+        z = Zookeeper.ZKLockServer(**cfg)
     except Exception as err:
         LOGGER.exception("%s", err)
         print err
@@ -144,7 +144,7 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0):
         base_lock_name = cfg["name"]
         for i in xrange(0, sequence):
             sequence_lock_name = "%s_%d" % (base_lock_name, i)
-            z.setLockName(sequence_lock_name)
+            z.set_lock_name(sequence_lock_name)
             # do NOT remove this print
             print sequence_lock_name
             if not z.getlock():
@@ -152,7 +152,7 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0):
                 continue
             else:
                 break
-        if not z.checkLock():
+        if not z.check_lock():
             LOGGER.debug("Unable to acquire lock. Do exit")
             sys.exit(exitcode)
     # unique lock
@@ -175,7 +175,7 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0):
                     cond_var.release()
                     if z.getlock():
                         break
-                if not z.checkLock():
+                if not z.check_lock():
                     LOGGER.debug("Unable to acquire lock. Do exit")
                     sys.exit(exitcode)
 
@@ -208,7 +208,7 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0):
         cv.notify()
         cv.release()
 
-    if not z.set_async_checkLock(watcher_cb):
+    if not z.set_async_check_lock(watcher_cb):
         LOGGER.error("Unable to attach async watcher for lock")
         sys.exit(1)
 
@@ -222,7 +222,7 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0):
     while True:
         with cv:
             cv.wait(100)
-        if not z.checkLock():
+        if not z.check_lock():
             LOGGER.warning("Lock lost")
             try:
                 kill_child(p)
