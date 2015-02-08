@@ -97,8 +97,15 @@ class ZKeeperClient(object):
         logger_name = config.get('logger_name')
         self.logger = logging.getLogger(logger_name) if logger_name else Null()
         self.zkhandle = None
+        self.auth = None
+        self.cv = threading.Condition()
 
         try:
+            auth_config = config.get("auth")
+            if auth_config is not None:
+                auth_scheme = auth_config["scheme"]
+                auth_data = auth_config["data"]
+                self.auth = (auth_scheme, auth_data)
             zklogfile_path, zklog_level = config.get("ZookeeperLog",
                                                      ("/dev/stderr", "WARN"))
             self.connection_timeout = config['timeout']
@@ -122,14 +129,34 @@ class ZKeeperClient(object):
 
         self.connect()
         if zookeeper.state(self.zkhandle) == zookeeper.CONNECTED_STATE:
-            self.logger.info('Connected to Zookeeper succesfully')
+            self.logger.info('Connected to Zookeeper successfully')
         else:
             raise zookeeper.ZooKeeperException('Unable to connect '
                                                'to Zookeeper')
 
-    def connect(self):
-        self.cv = threading.Condition()
+        def on_auth_callback(state, result):
+            with self.cv:
+                if result == zookeeper.AUTHFAILED:
+                    self.logger.error(zookeeper.zerror(zookeeper.AUTHFAILED))
+                self.logger.info("on_auth: state %s, result %s",
+                                 state, result)
+                self.cv.notify()
 
+        if self.auth:
+            self.logger.info("Auth using %s", self.auth[0])
+            with self.cv:
+                res = zookeeper.add_auth(self.zkhandle, self.auth[0],
+                                         self.auth[1], on_auth_callback)
+                if res != zookeeper.OK:
+                    self.logger.error("Invalid status %d",
+                                      zookeeper.zerror(res))
+                    raise Exception("Invalid status")
+                self.cv.wait(self.connection_timeout)
+
+            if zookeeper.state(self.zkhandle) == zookeeper.AUTH_FAILED_STATE:
+                raise zookeeper.ZooKeeperException('authentication failed')
+
+    def connect(self):
         def connect_watcher(handle, w_type, state, path):
             """Callback for connect()"""
             with self.cv:
