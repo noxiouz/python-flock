@@ -4,17 +4,17 @@ Priority: extra
 Maintainer: Anton Tyurin <noxiouz@yandex.ru>
 Build-Depends: debhelper ( >= 7),
  python (>= 2.6),
- python-central | dh-python,
- python-setuptools
+# python-central for lucid, dh-python for trusty
+ python (>= 2.6.6-3) | python-central, base-files (<<7.2) | dh-python
 Standards-Version: 3.9.1
 XS-Python-Version: >= 2.6
+X-Python-Version: >= 2.6
 Homepage: https://github.com/noxiouz/python-flock
 
 Package: zk-flock
 Architecture: all
-Depends:
- ${shlibs:Depends},
- python (>= 2.6),
- python-zookeeper
+Depends: ${python:Depends}
+Provides: ${python:Provides}
+XB-Python-Version: ${python:Versions}
 Description: Distributed flock
  Distributed flock based on Zookeeper

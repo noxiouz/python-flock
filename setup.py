@@ -56,6 +56,9 @@ setup(
     requires=[
         "zookeeper"
     ],
+    install_requires=[
+        "setuptools"
+    ],
     classifiers=['Development Status :: 4 - Beta',
                  'Intended Audience :: Developers',
                  'Programming Language :: Python',

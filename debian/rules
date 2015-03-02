@@ -1,7 +1,11 @@
 #!/usr/bin/make -f
 
-version=$(shell lsb_release -r | cut -f2 | cut -d'.' -f1)
-# trusty
-%:
-	dh $@
+ifeq (lucid,$(shell lsb_release -sc))
+	    PYTHON_HELPER=python-central
+	else
+	    PYTHON_HELPER=python2
+	endif
 
+
+%:
+		dh $@ --with=$(PYTHON_HELPER)
