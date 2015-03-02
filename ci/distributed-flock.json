@@ -1,0 +1,14 @@
+{
+    "host"      :   [
+            "localhost:2181",
+        ],
+    "timeout"   :   1,
+    "app_id"    :   "CONTENT",
+    "sleep"     :   "OFF",
+    "maxla"     :   -1,
+    "logger"    :   {
+            "path"      :   "/tmp/zkflock.log",
+            "level"     :   "debug",
+            "zklevel"   :   "debug"
+        }
+}
