@@ -1,6 +1,6 @@
 {
     "host"      :   [
-            "localhost:2181",
+            "localhost:2181"
         ],
     "timeout"   :   1,
     "app_id"    :   "CONTENT",

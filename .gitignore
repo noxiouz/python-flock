@@ -2,3 +2,7 @@
 *.pyo
 *.swp
 *.swo
+reports/
+.coverage
+*.egg-info
+build/

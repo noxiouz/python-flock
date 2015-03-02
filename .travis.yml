@@ -5,6 +5,8 @@ python:
 before_install:
   - "ci/travis.sh"   
 install:
+  - "pip install -r requirements.txt"
+  - "sudo cp ci/distributed-flock.json /etc/distributed-flock.json"
   - "sudo apt-get install zookeeper zookeeperd"
 script: python setup.py nosetests
 after_success: coveralls

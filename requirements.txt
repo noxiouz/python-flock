@@ -1,0 +1,2 @@
+zc-zookeeper-static
+setuptools

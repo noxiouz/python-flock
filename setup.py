@@ -46,18 +46,8 @@ setup(
     description=__description__,
     download_url=d,
     long_description=open('./README.md').read(),
-    packages=[
-        "distributedflock",
-        "distributedflock.ZKeeperAPI"
-    ],
     scripts=[
         'zk-flock'
-    ],
-    requires=[
-        "zookeeper"
-    ],
-    install_requires=[
-        "setuptools"
     ],
     classifiers=['Development Status :: 4 - Beta',
                  'Intended Audience :: Developers',
@@ -74,4 +64,12 @@ setup(
                  'License v3 or later (LGPLv3+)'],
     platforms=['Independent'],
     license=open('./LICENSE').read(),
+    zip_safe=False,
+    packages=[
+        "distributedflock",
+        "distributedflock.ZKeeperAPI"
+    ],
+    install_requires=open('./requirements.txt').read(),
+    tests_require=open('./tests/requirements.txt').read(),
+    test_suite='nose.collector'
 )
