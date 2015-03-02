@@ -1,3 +1,8 @@
+zk-flock  [![Build Status](https://travis-ci.org/noxiouz/python-flock.svg?branch=master)](https://travis-ci.org/noxiouz/python-flock)
+========
+
+You can use `zk-flock` to run programs in a cluster under a distributed lock to limit overall amount of instances.
+
 Configuration
 =============
 
