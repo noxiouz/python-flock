@@ -45,5 +45,13 @@ class firsttest(unittest.TestCase):
         self.assertFalse(check_pid(self.PID))
 
 
+class exitcodetest(unittest.TestCase):
+    def test_exit_code(self):
+        args = shlex.split("python zk-flock ffffff \"bash -c 'exit 123'\"")
+        p = subprocess.Popen(args)
+        exit_code = p.wait()
+        self.assertEquals(exit_code, 123)
+
+
 if __name__ == "__main__":
     unittest.main()
