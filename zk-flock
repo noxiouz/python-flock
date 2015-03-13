@@ -194,10 +194,11 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0):
         except Exception as err:
             LOGGER.debug(str(err))
         finally:
-            if kill_child(p) is not None:
+            returncode = kill_child(p)
+            if returncode is not None:
                 # Means that child has ended work and return some sode
                 # That's for SIGCHLD
-                sys.exit(0)
+                sys.exit(returncode)
             else:
                 # Means we kill our child manualy
                 # That's true for SIGTERM
