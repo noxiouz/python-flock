@@ -1,3 +1,9 @@
+zk-flock (0.1.4.0) unstable; urgency=low
+
+  * [pdeathsig] Send a signal to the child process if the master died
+
+ -- Anton Tyurin <noxiouz@yandex-team.ru>  Mon, 20 Apr 2015 19:28:09 +0400
+
 zk-flock (0.1.3.4) unstable; urgency=low
 
   * Fix packaging again for precide/lucid/trusty 
