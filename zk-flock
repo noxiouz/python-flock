@@ -275,7 +275,7 @@ if __name__ == "__main__":
         parser.add_option("-p", "--pdeathsig", action="store", type=int,
                           dest="pdeathsig", default=signal.SIGTERM,
                           help="signal that is sent to a child process "
-                               "if the parent dies")
+                               "if the parent dies (default SIGTERM)")
     (options, args) = parser.parse_args()
 
     if len(args) == 2:
