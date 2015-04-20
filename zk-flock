@@ -35,6 +35,7 @@ from threading import Condition
 
 from distributedflock import Zookeeper
 from distributedflock import Daemon
+from distributedflock import pdeathsig
 
 DEFAULT_ZOOKEEPER_LOG_LEVEL = "WARN"
 DEFAULT_LOG_LEVEL = "INFO"
@@ -56,10 +57,11 @@ def initialize_logger(path, level):
     app_log.info("Logger has been initialized successfully")
 
 
-def start_child(cmd):
+def start_child(cmd, pdeathsig_func=None):
     args = shlex.split(cmd)
     try:
-        p = subprocess.Popen(args, close_fds=True)
+        p = subprocess.Popen(args, close_fds=True,
+                             preexec_fn=pdeathsig_func)
     except OSError as err:
         LOGGER.error("Unable to start child process, because of %s", err)
         sys.exit(1)
@@ -130,7 +132,8 @@ def notifier(cv):
     cv.release()
 
 
-def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0):
+# ToDo: accept options as the last argument
+def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0, pdeathsig_num=0):
     try:
         z = Zookeeper.ZKLockServer(**cfg)
     except Exception as err:
@@ -213,7 +216,11 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0):
         LOGGER.error("Unable to attach async watcher for lock")
         sys.exit(1)
 
-    p = start_child(cmd_arg)
+    if pdeathsig.support_pdeathsig():
+        pdeathsig_func = partial(pdeathsig.set_pdeathsig, pdeathsig_num)
+        p = start_child(cmd_arg, pdeathsig_func)
+    else:
+        p = start_child(cmd_arg)
     signal.signal(signal.SIGTERM, partial(sigterm_and_sigchld_handle, p))
     signal.signal(signal.SIGCHLD, partial(sigterm_and_sigchld_handle, p))
     if p.poll() is not None:
@@ -263,6 +270,12 @@ if __name__ == "__main__":
     parser.add_option("-n", "", action="store", type=int,
                       dest="sequence", default=0,
                       help="Sequence of locks")
+
+    if pdeathsig.support_pdeathsig():
+        parser.add_option("-p", "--pdeathsig", action="store", type=int,
+                          dest="pdeathsig", default=signal.SIGTERM,
+                          help="signal that is sent to a child process "
+                               "if the parent dies")
     (options, args) = parser.parse_args()
 
     if len(args) == 2:
@@ -302,7 +315,7 @@ if __name__ == "__main__":
         daemon = Daemon()
         daemon.run = main
         daemon.start(cmd_arg, cfg, options.waittime,
-                     options.exitcode, options.sequence)
+                     options.exitcode, options.sequence, options.pdeathsig)
     else:
         main(cmd_arg, cfg, options.waittime,
-             options.exitcode, options.sequence)
+             options.exitcode, options.sequence, options.pdeathsig)
