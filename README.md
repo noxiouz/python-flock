@@ -57,7 +57,9 @@ zk-flock my_test_lock "bash /home/user/test.sh arg1 arg2 arg3"
 For attempting to lock lasted for a specific time, use the **-w** option (**--wait**) setting the time in seconds.
 Add key **-d** or **--daemonize** to starts this appliction as daemon.
 
-Warning
-=======
+Use **-p** or **--pdeathsig** to specify a signal that will be sent if the master process died. By default the signal is **SIGTERM**.
+
+Non Linux usage warning
+=======================
 
 If you kill zk-flock application with **kill -9**, the lock will be released, but this will not stop your application.
