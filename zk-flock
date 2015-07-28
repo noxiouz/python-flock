@@ -127,9 +127,8 @@ def get_la():
 
 
 def notifier(cv):
-    cv.acquire()
-    cv.notify()
-    cv.release()
+    with cv:
+        cv.notify()
 
 
 # ToDo: accept options as the last argument
@@ -164,23 +163,26 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0, pdeathsig_num=0):
             if period is None:
                 LOGGER.debug("Unable to acquire lock. Do exit")
                 sys.exit(exitcode)
+
             # trying to acquire the lock during timeout
-            else:
-                LOGGER.info("Try to wait %d sec" % period)
-                limit_time = time.time() + period
-                cond_var = Condition()
-                watcher = partial(notifier, cond_var)
-                while limit_time - time.time() > 0.1:
-                    time_to_wait = limit_time - time.time()
-                    z.set_node_deleting_watcher(z.lockpath, watcher)
-                    cond_var.acquire()
+            LOGGER.info("Try to wait %d sec" % period)
+            limit_time = time.time() + period
+            cond_var = Condition()
+            watcher = partial(notifier, cond_var)
+            while limit_time - time.time() > 0.1:
+                time_to_wait = limit_time - time.time()
+                if not z.set_node_deleting_watcher(z.lockpath, watcher):
+                    LOGGER.error("unable to attach delete watcher")
+                    break
+
+                with cond_var:
                     cond_var.wait(time_to_wait)
-                    cond_var.release()
-                    if z.getlock():
-                        break
-                if not z.check_lock():
-                    LOGGER.debug("Unable to acquire lock. Do exit")
-                    sys.exit(exitcode)
+
+                if z.getlock():
+                    break
+            if not z.check_lock():
+                LOGGER.debug("Unable to acquire lock. Do exit")
+                sys.exit(exitcode)
 
     cv = Condition()
 
