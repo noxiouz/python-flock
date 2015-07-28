@@ -212,31 +212,36 @@ class ZKeeperClient(object):
         return zookeeper.delete(self.zkhandle, absname)
 
     # Async API
-    def aget(self, node, callback):
-        if not callable(callback):
-            return None
+    def aget(self, node, callback, rccallback=None):
+        # callback is invoked when the watcher triggers
+        # rccallback is invoked when the result of attaching
+        # becomes available (OK, NONODE and so on)
+        assert callable(callback), "callback must be callable"
+        if rccallback is not None:
+            assert callable(rccallback), "rccallback must be callable"
 
         def watcher(self, zh, event, state, path):
             self.logger.info("Node state has been changed")
             if event == zookeeper.CHANGED_EVENT:
-                self.logger.debug("Node %s has been modified", str(path))
+                self.logger.debug("Node %s has been modified", path)
             elif event == zookeeper.CREATED_EVENT:
-                self.logger.debug("Node %s has been created", str(path))
+                self.logger.debug("Node %s has been created", path)
             elif event == zookeeper.DELETED_EVENT:
-                self.logger.warning("Node %s has been deleted", str(path))
+                self.logger.warning("Node %s has been deleted", path)
 
             if state == zookeeper.EXPIRED_SESSION_STATE:
                 self.logger.error("Session has expired")
             callback(event, state, path)
 
+        def rc_handler(self, zh, rc, data, stat):
+            if zookeeper.OK == rc:
+                self.logger.debug("Callback has been attached succesfully")
+            elif zookeeper.NONODE == rc:
+                self.logger.warning("Watched node doesn't exists")
+            if rccallback is not None:
+                rccallback(rc)
+
         res = zookeeper.aget(self.zkhandle, node,
                              partial(watcher, self),
-                             partial(self.handler, zookeeper))
+                             partial(rc_handler, self))
         return res == zookeeper.OK
-
-    def handler(self, zkmodule, zh, rc, data, stat):
-        if zkmodule.OK == rc:
-            self.logger.debug("Callback has been attached succesfully")
-        else:
-            if zkmodule.NONODE == rc:
-                self.logger.error("Watched node doesn't exists")

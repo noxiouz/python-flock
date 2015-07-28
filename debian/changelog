@@ -1,3 +1,10 @@
+zk-flock (0.1.4.1) unstable; urgency=low
+
+  * [BugFix] Fix raise when the lock was deleted
+    before attaching a delete watcher
+
+ -- Anton Tyurin <noxiouz@yandex-team.ru>  Tue, 28 Jul 2015 19:37:42 +0300
+
 zk-flock (0.1.4.0) unstable; urgency=low
 
   * [pdeathsig] Send a signal to the child process if the master died
@@ -6,7 +13,7 @@ zk-flock (0.1.4.0) unstable; urgency=low
 
 zk-flock (0.1.3.4) unstable; urgency=low
 
-  * Fix packaging again for precide/lucid/trusty 
+  * Fix packaging again for precide/lucid/trusty
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Mon, 02 Mar 2015 15:35:44 +0400
 
@@ -32,7 +39,7 @@ zk-flock (0.1.3.1) unstable; urgency=low
 
 zk-flock (0.1.3.0) unstable; urgency=low
 
-  * Handle with connection timeout properly: 
+  * Handle with connection timeout properly:
     now it's passed to zookeeper.init
   * Proper determination of connection state
     state is compared with CONNECTED_STATE
@@ -73,7 +80,7 @@ zk-flock (0.1.2.0) unstable; urgency=low
 
 zk-flock (0.1-beta18) unstable; urgency=low
 
-  * fix type of command line option Default 
+  * fix type of command line option Default
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Thu, 01 Aug 2013 12:33:41 +0400
 
@@ -85,13 +92,13 @@ zk-flock (0.1-beta17) unstable; urgency=low
 
 zk-flock (0.1-beta16) unstable; urgency=low
 
-  * transport zookeeper module into watcher handler (looks like bug) 
+  * transport zookeeper module into watcher handler (looks like bug)
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Tue, 09 Jul 2013 16:30:03 +0400
 
 zk-flock (0.1-beta15) unstable; urgency=low
 
-  * assert on zookeeper is None 
+  * assert on zookeeper is None
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Mon, 08 Jul 2013 17:49:43 +0400
 
@@ -109,7 +116,7 @@ zk-flock (0.1-beta13) unstable; urgency=low
 
 zk-flock (0.1-beta12) unstable; urgency=low
 
-  * fix debianization under precise 
+  * fix debianization under precise
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Fri, 21 Jun 2013 01:11:04 +0400
 
@@ -128,13 +135,13 @@ zk-flock (0.1-beta10) unstable; urgency=low
 
 zk-flock (0.1-beta9) unstable; urgency=low
 
-  * work on returned codes 
+  * work on returned codes
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Tue, 07 May 2013 16:11:43 +0400
 
 zk-flock (0.1-beta8) unstable; urgency=low
 
-  * default logging to /dev/null 
+  * default logging to /dev/null
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Mon, 15 Apr 2013 00:49:21 +0400
 
@@ -147,25 +154,25 @@ zk-flock (0.1-beta7) unstable; urgency=low
 
 zk-flock (0.1-beta6) unstable; urgency=low
 
-  * supress some prints 
+  * supress some prints
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Thu, 28 Feb 2013 17:20:20 +0400
 
 zk-flock (0.1-beta5) unstable; urgency=low
 
-  * Async lock check 
+  * Async lock check
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Fri, 08 Feb 2013 01:24:06 +0400
 
 zk-flock (0.1-beta4) unstable; urgency=low
 
-  * Add handling for SIGTERM and SIGCHLD. Remove process.poll() for check alive 
+  * Add handling for SIGTERM and SIGCHLD. Remove process.poll() for check alive
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Thu, 07 Feb 2013 03:26:06 +0400
 
 zk-flock (0.1-beta3) unstable; urgency=low
 
-  * add daemonize and configpath options 
+  * add daemonize and configpath options
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Thu, 31 Jan 2013 00:44:15 +0400
 
@@ -177,7 +184,7 @@ zk-flock (0.1-beta2) unstable; urgency=low
 
 zk-flock (0.1-beta1) unstable; urgency=low
 
-  * aisohf 
+  * aisohf
 
  -- Anton Tyurin <noxiouz@yandex-team.ru>  Tue, 22 Jan 2013 17:08:02 +0400
 

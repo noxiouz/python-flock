@@ -103,7 +103,12 @@ class ZKLockServer(object):
         def callback_wrapper(event, state, path):
             if event == 2:  # zookeeper.DELETE_EVENT
                 callback()
-        return self.zkclient.aget(path, callback_wrapper)
+
+        def callback_rc_wrapper(rc):
+            if rc == -101:  # zookeeper.NONODE
+                callback()
+
+        return self.zkclient.aget(path, callback_wrapper, callback_rc_wrapper)
 
     def destroy(self):
         try:
