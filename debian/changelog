@@ -1,3 +1,9 @@
+zk-flock (0.1.4.2) unstable; urgency=low
+
+  * Rebuild with python2.6
+
+ -- Anton Tyurin <noxiouz@yandex-team.ru>  Thu, 08 Oct 2015 14:41:49 +0400
+
 zk-flock (0.1.4.1) unstable; urgency=low
 
   * [BugFix] Fix raise when the lock was deleted
