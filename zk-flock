@@ -313,11 +313,13 @@ if __name__ == "__main__":
     if want_to_sleep == "ON":
         time.sleep(get_la())
 
+    pdeathsig_num = getattr(options, "pdeathsig", 0)
+
     if options.isdaemonize:
         daemon = Daemon()
         daemon.run = main
         daemon.start(cmd_arg, cfg, options.waittime,
-                     options.exitcode, options.sequence, options.pdeathsig)
+                     options.exitcode, options.sequence, pdeathsig_num)
     else:
         main(cmd_arg, cfg, options.waittime,
-             options.exitcode, options.sequence, options.pdeathsig)
+             options.exitcode, options.sequence, pdeathsig_num)
