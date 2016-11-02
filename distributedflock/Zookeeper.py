@@ -22,7 +22,7 @@
 import logging
 import socket
 import uuid
-import os
+import sys
 
 from ZKeeperAPI import zkapi
 
