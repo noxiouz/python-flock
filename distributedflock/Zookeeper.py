@@ -22,9 +22,11 @@
 import logging
 import socket
 import uuid
+import os
 
 from ZKeeperAPI import zkapi
 
+PY27 = sys.version_info >= (2,7)
 
 class ZKLockServer(object):
     def __init__(self, **config):
@@ -43,7 +45,10 @@ class ZKLockServer(object):
                     raise Exception(msg)
 
             self.lock = config['name']
-            self.lockpath = '/{}/{}'.format(self.id, self.lock)
+            if PY27:
+                self.lockpath = '/{}/{}'.format(self.id, self.lock)
+            else:
+                self.lockpath = '/%s/%s' % (self.id, self.lock)
             self.locked = False
             self.lock_content = socket.gethostname() + str(uuid.uuid4())
         except Exception as err:
@@ -65,7 +70,10 @@ class ZKLockServer(object):
 
     def set_lock_name(self, name):
         self.lock = name
-        self.lockpath = '/{}/{}'.format(self.id, self.lock)
+        if PY27:
+            self.lockpath = '/{}/{}'.format(self.id, self.lock)
+        else:
+            self.lockpath = '/%s/%s' % (self.id, self.lock)
 
     def releaselock(self):
         try:
