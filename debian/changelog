@@ -1,3 +1,9 @@
+zk-flock (0.1.4.4) unstable; urgency=medium
+
+  * Rebuild with tar.gz instead of tar.xz
+
+ -- Arsenev Alexey <aarseniev@yandex-team.ru>  Wed, 09 Nov 2016 10:32:05 +0300
+
 zk-flock (0.1.4.3) unstable; urgency=medium
 
   * Fix work with cyrillic lock name (>= python2.7). Python 2.6 work logic not changed
