@@ -6,6 +6,8 @@ ifeq (lucid,$(shell lsb_release -sc))
 	    PYTHON_HELPER=python2
 	endif
 
+override_dh_builddeb:
+	dh_builddeb -- -Zgzip
 
 %:
 		dh $@ --with=$(PYTHON_HELPER)
