@@ -19,6 +19,20 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import os
+import uuid
+
+PYTHON_EGG_CACHE='/tmp/.zk_flock_cache'
+try:
+  os.mkdir(PYTHON_EGG_CACHE,mode=0o777)
+except:
+  pass
+try:
+  os.mkdir(PYTHON_EGG_CACHE + '/'+os.getlogin())
+except:
+  pass
+os.environ['PYTHON_EGG_CACHE'] = PYTHON_EGG_CACHE + '/' + os.getlogin()
+
 import errno
 from functools import partial
 import json
@@ -45,6 +59,8 @@ LOGGER = logging.getLogger("zk-flock")
 
 
 def initialize_logger(path, level):
+    path = path.split('/')
+    path = '/'.join(path[:-1]) +"/"+ os.getlogin()+"_"+path[-1:][0]
     level = getattr(logging, level.upper(), logging.ERROR)
     _format = logging.Formatter('%(asctime)s %(levelname)-8s'
                                 '%(process)d %(message)s', '%Y-%m-%d %H:%M:%S')
@@ -293,7 +309,11 @@ if __name__ == "__main__":
         print "Unable to read configuration file: %s" % options.confpath
         sys.exit(1)
 
-    initialize_logger(cfg['path'], cfg['level'])
+    try:
+        initialize_logger(cfg['path'], cfg['level'])
+    except:
+        print "Couldn't initialize log file"
+
     cfg['name'] = pid_name  # lockname
 
     # Sleep
