@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2012 Tyurin Anton noxiouz@yandex-team.ru
@@ -38,7 +38,6 @@ from functools import partial
 import json
 import logging
 import logging.handlers
-import os
 import optparse
 import shlex
 import subprocess
@@ -148,7 +147,7 @@ def notifier(cv):
 
 
 # ToDo: accept options as the last argument
-def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0, pdeathsig_num=0):
+def main(cmd_arg, zk_cfg, period=3, exitcode=0, sequence=0, pdeathsig_num=0, minlocktime=5):
     try:
         z = Zookeeper.ZKLockServer(**cfg)
     except Exception as err:
@@ -202,7 +201,8 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0, pdeathsig_num=0):
 
     cv = Condition()
 
-    def sigterm_and_sigchld_handle(p, signum, frame):
+    def sigterm_and_sigchld_handle(p, signum, frame, minlocktime=5):
+        os.system("sleep %d" % minlocktime)
         # TBD - split by two handlers for each signal
         if signum == signal.SIGTERM:
             LOGGER.info("Stop work by SIGTERM")
@@ -260,7 +260,7 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0, pdeathsig_num=0):
 
 
 if __name__ == "__main__":
-    usage = "Usage: %prog LOCKNAME COMMAND [-cdhs]"
+    usage = "Usage: %prog LOCKNAME COMMAND [-cdhsl]"
     parser = optparse.OptionParser(usage)
     parser.add_option("-c", "--confpath", action="store",
                       dest="confpath", default="/etc/distributed-flock.json",
@@ -288,6 +288,10 @@ if __name__ == "__main__":
     parser.add_option("-n", "", action="store", type=int,
                       dest="sequence", default=0,
                       help="Sequence of locks")
+
+    parser.add_option("-l", "--minlocktime", action="store", type=int,
+                      dest="minlocktime", default=5,
+                      help="Minimum time for lock")
 
     if pdeathsig.support_pdeathsig():
         parser.add_option("-p", "--pdeathsig", action="store", type=int,
@@ -339,7 +343,7 @@ if __name__ == "__main__":
         daemon = Daemon()
         daemon.run = main
         daemon.start(cmd_arg, cfg, options.waittime,
-                     options.exitcode, options.sequence, pdeathsig_num)
+                     options.exitcode, options.sequence, pdeathsig_num, options.minlocktime)
     else:
         main(cmd_arg, cfg, options.waittime,
-             options.exitcode, options.sequence, pdeathsig_num)
+             options.exitcode, options.sequence, pdeathsig_num, options.minlocktime)
