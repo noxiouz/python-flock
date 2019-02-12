@@ -21,18 +21,6 @@
 
 import os
 import uuid
-
-PYTHON_EGG_CACHE='/tmp/.zk_flock_cache'
-try:
-  os.mkdir(PYTHON_EGG_CACHE,mode=0o777)
-except:
-  pass
-try:
-  os.mkdir(PYTHON_EGG_CACHE + '/'+os.getlogin())
-except:
-  pass
-os.environ['PYTHON_EGG_CACHE'] = PYTHON_EGG_CACHE + '/' + os.getlogin()
-
 import errno
 from functools import partial
 import json
@@ -49,6 +37,18 @@ from threading import Condition
 from distributedflock import Zookeeper
 from distributedflock import Daemon
 from distributedflock import pdeathsig
+
+
+PYTHON_EGG_CACHE='/tmp/.zk_flock_cache'
+try:
+  os.mkdir(PYTHON_EGG_CACHE,mode=0o777)
+except:
+  pass
+try:
+  os.mkdir(PYTHON_EGG_CACHE + '/'+os.getlogin())
+except:
+  pass
+os.environ['PYTHON_EGG_CACHE'] = PYTHON_EGG_CACHE + '/' + os.getlogin()
 
 DEFAULT_ZOOKEEPER_LOG_LEVEL = "WARN"
 DEFAULT_LOG_LEVEL = "INFO"
@@ -147,7 +147,7 @@ def notifier(cv):
 
 
 # ToDo: accept options as the last argument
-def main(cmd_arg, zk_cfg, period=3, exitcode=0, sequence=0, pdeathsig_num=0, minlocktime=5):
+def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0, pdeathsig_num=0, minlocktime=5):
     try:
         z = Zookeeper.ZKLockServer(**cfg)
     except Exception as err:
@@ -202,7 +202,7 @@ def main(cmd_arg, zk_cfg, period=3, exitcode=0, sequence=0, pdeathsig_num=0, min
     cv = Condition()
 
     def sigterm_and_sigchld_handle(p, signum, frame, minlocktime=5):
-        os.system("sleep %d" % minlocktime)
+        time.sleep(minlocktime)
         # TBD - split by two handlers for each signal
         if signum == signal.SIGTERM:
             LOGGER.info("Stop work by SIGTERM")
