@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2012 Tyurin Anton noxiouz@yandex-team.ru
@@ -19,12 +19,13 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import os
+import uuid
 import errno
 from functools import partial
 import json
 import logging
 import logging.handlers
-import os
 import optparse
 import shlex
 import subprocess
@@ -37,6 +38,18 @@ from distributedflock import Zookeeper
 from distributedflock import Daemon
 from distributedflock import pdeathsig
 
+
+PYTHON_EGG_CACHE='/tmp/.zk_flock_cache'
+try:
+  os.mkdir(PYTHON_EGG_CACHE,mode=0o777)
+except:
+  pass
+try:
+  os.mkdir(PYTHON_EGG_CACHE + '/'+os.getlogin())
+except:
+  pass
+os.environ['PYTHON_EGG_CACHE'] = PYTHON_EGG_CACHE + '/' + os.getlogin()
+
 DEFAULT_ZOOKEEPER_LOG_LEVEL = "WARN"
 DEFAULT_LOG_LEVEL = "INFO"
 DEFAULT_LOGFILE_PATH = "/dev/null"
@@ -45,6 +58,8 @@ LOGGER = logging.getLogger("zk-flock")
 
 
 def initialize_logger(path, level):
+    path = path.split('/')
+    path = '/'.join(path[:-1]) +"/"+ os.getlogin()+"_"+path[-1:][0]
     level = getattr(logging, level.upper(), logging.ERROR)
     _format = logging.Formatter('%(asctime)s %(levelname)-8s'
                                 '%(process)d %(message)s', '%Y-%m-%d %H:%M:%S')
@@ -132,7 +147,7 @@ def notifier(cv):
 
 
 # ToDo: accept options as the last argument
-def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0, pdeathsig_num=0):
+def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0, pdeathsig_num=0, minlocktime=5):
     try:
         z = Zookeeper.ZKLockServer(**cfg)
     except Exception as err:
@@ -186,7 +201,8 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0, pdeathsig_num=0):
 
     cv = Condition()
 
-    def sigterm_and_sigchld_handle(p, signum, frame):
+    def sigterm_and_sigchld_handle(p, signum, frame, minlocktime=5):
+        time.sleep(minlocktime)
         # TBD - split by two handlers for each signal
         if signum == signal.SIGTERM:
             LOGGER.info("Stop work by SIGTERM")
@@ -244,7 +260,7 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0, pdeathsig_num=0):
 
 
 if __name__ == "__main__":
-    usage = "Usage: %prog LOCKNAME COMMAND [-cdhs]"
+    usage = "Usage: %prog LOCKNAME COMMAND [-cdhsl]"
     parser = optparse.OptionParser(usage)
     parser.add_option("-c", "--confpath", action="store",
                       dest="confpath", default="/etc/distributed-flock.json",
@@ -273,6 +289,10 @@ if __name__ == "__main__":
                       dest="sequence", default=0,
                       help="Sequence of locks")
 
+    parser.add_option("-l", "--minlocktime", action="store", type=int,
+                      dest="minlocktime", default=5,
+                      help="Minimum time for lock")
+
     if pdeathsig.support_pdeathsig():
         parser.add_option("-p", "--pdeathsig", action="store", type=int,
                           dest="pdeathsig", default=signal.SIGTERM,
@@ -293,7 +313,11 @@ if __name__ == "__main__":
         print "Unable to read configuration file: %s" % options.confpath
         sys.exit(1)
 
-    initialize_logger(cfg['path'], cfg['level'])
+    try:
+        initialize_logger(cfg['path'], cfg['level'])
+    except:
+        print "Couldn't initialize log file"
+
     cfg['name'] = pid_name  # lockname
 
     # Sleep
@@ -319,7 +343,7 @@ if __name__ == "__main__":
         daemon = Daemon()
         daemon.run = main
         daemon.start(cmd_arg, cfg, options.waittime,
-                     options.exitcode, options.sequence, pdeathsig_num)
+                     options.exitcode, options.sequence, pdeathsig_num, options.minlocktime)
     else:
         main(cmd_arg, cfg, options.waittime,
-             options.exitcode, options.sequence, pdeathsig_num)
+             options.exitcode, options.sequence, pdeathsig_num, options.minlocktime)
