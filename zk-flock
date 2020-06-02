@@ -201,7 +201,7 @@ def main(cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0, pdeathsig_num=0, 
 
     cv = Condition()
 
-    def sigterm_and_sigchld_handle(p, signum, frame, minlocktime=5):
+    def sigterm_and_sigchld_handle(p, signum, frame):
         time.sleep(minlocktime)
         # TBD - split by two handlers for each signal
         if signum == signal.SIGTERM:
