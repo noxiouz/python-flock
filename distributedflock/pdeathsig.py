@@ -26,12 +26,13 @@ if sys.platform.startswith("linux"):
     import ctypes
     from ctypes.util import find_library
 
-    libc = ctypes.CDLL(find_library('c'))
+    libc = ctypes.CDLL(find_library("c"))
 
     PR_SET_PDEATHSIG = 1  # <sys/prctl.h>
 
     def set_pdeathsig(sig_num):
         libc.prctl(PR_SET_PDEATHSIG, sig_num, 0, 0, 0)
+
 
 else:
     set_pdeathsig = None

@@ -18,39 +18,42 @@ def check_pid(pid):
         return True
 
 
-class firsttest(unittest.TestCase):
-
+class FirstTest(unittest.TestCase):
     def setUp(self):
-        args = shlex.split("python zk-flock ffffff \"sleep 3600\" -d")
-        self.p = subprocess.Popen(args)
+        args = shlex.split('python zk-flock ffffff "sleep 3600" -d')
+        self.flock_process = subprocess.Popen(args)
         time.sleep(2)
-        x = subprocess.Popen("ps aux | grep \"zk-flock\" | grep sleep"
-                             "| grep -v grep | awk '{print $2}'",
-                             shell=True, stdout=subprocess.PIPE)
+        x = subprocess.Popen(
+            'ps aux | grep "zk-flock" | grep sleep' "| grep -v grep | awk '{print $2}'",
+            shell=True,
+            stdout=subprocess.PIPE,
+        )
         output = x.stdout.read()
         self.PID = int(output)
-        x = subprocess.Popen("ps aux | grep sleep | grep -v grep"
-                             "| grep -v python | awk '{print $2}'",
-                             shell=True, stdout=subprocess.PIPE)
+        x = subprocess.Popen(
+            "ps aux | grep sleep | grep -v grep" "| grep -v python | awk '{print $2}'",
+            shell=True,
+            stdout=subprocess.PIPE,
+        )
         self.CHILD_PID = int(x.stdout.read())
 
-    def test_kill_him(self):
+    def test_kill_observer(self):
         os.kill(self.PID, 15)
-        time.sleep(2)
+        time.sleep(10)
         self.assertFalse(check_pid(self.PID))
 
     def test_kill_child(self):
         os.kill(self.CHILD_PID, 15)
-        time.sleep(5)
+        time.sleep(10)
         self.assertFalse(check_pid(self.PID))
 
 
-class exitcodetest(unittest.TestCase):
+class ExitcodeTest(unittest.TestCase):
     def test_exit_code(self):
         args = shlex.split("python zk-flock ffffff \"bash -c 'exit 123'\"")
         p = subprocess.Popen(args)
         exit_code = p.wait()
-        self.assertEquals(exit_code, 123)
+        self.assertEqual(exit_code, 123)
 
 
 if __name__ == "__main__":

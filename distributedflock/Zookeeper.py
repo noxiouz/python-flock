@@ -22,19 +22,17 @@
 import logging
 import socket
 import uuid
-import sys
 
 from ZKeeperAPI import zkapi
 
-PY27 = sys.version_info >= (2,7)
 
 class ZKLockServer(object):
     def __init__(self, **config):
         try:
-            self.log = logging.getLogger(config.get('logger_name', 'combaine'))
+            self.log = logging.getLogger(config.get("logger_name", "combaine"))
             self.zkclient = zkapi.ZKeeperClient(**config)
-            self.id = config['app_id']
-            res = self.zkclient.write('/%s' % self.id, "Rootnode")
+            self.id = config["app_id"]
+            res = self.zkclient.write("/%s" % self.id, "Rootnode")
             if (res != zkapi.zookeeper.NODEEXISTS) and (res < 0):
                 if res == zkapi.DEFAULT_ERRNO:
                     self.log.error("Unexpectable error")
@@ -44,45 +42,39 @@ class ZKLockServer(object):
                     self.log.error(msg)
                     raise Exception(msg)
 
-            self.lock = config['name']
-            if PY27:
-                self.lockpath = '/{}/{}'.format(self.id, self.lock)
-            else:
-                self.lockpath = '/%s/%s' % (self.id, self.lock)
+            self.lock = config["name"]
+            self.lockpath = "/{}/{}".format(self.id, self.lock)
             self.locked = False
             self.lock_content = socket.gethostname() + str(uuid.uuid4())
         except Exception as err:
-            self.log.error('Failed to init ZKLockServer: %s', err)
+            self.log.error("Failed to init ZKLockServer: %s", err)
             raise
         else:
-            self.log.debug('ZKeeperClient has been created')
+            self.log.debug("ZKeeperClient has been created")
 
     def getlock(self):
         if self.locked:
             return True
         if self.zkclient.write(self.lockpath, self.lock_content, 1) == 0:
-            self.log.info('Lock: success')
+            self.log.info("Lock: success")
             self.locked = True
             return True
         else:
-            self.log.info('Lock: fail')
+            self.log.info("Lock: fail")
             return False
 
     def set_lock_name(self, name):
         self.lock = name
-        if PY27:
-            self.lockpath = '/{}/{}'.format(self.id, self.lock)
-        else:
-            self.lockpath = '/%s/%s' % (self.id, self.lock)
+        self.lockpath = "/{}/{}".format(self.id, self.lock)
 
     def releaselock(self):
         try:
             self.zkclient.delete(self.lockpath)
-            self.log.info('Unlocked successfully')
+            self.log.info("Unlocked successfully")
             self.locked = False
             return True
         except Exception as err:
-            self.log.error('Unlocking failed %s', err)
+            self.log.error("Unlocking failed %s", err)
         return False
 
     def check_lock(self):
@@ -121,8 +113,8 @@ class ZKLockServer(object):
     def destroy(self):
         try:
             self.zkclient.disconnect()
-            self.log.info('Disconnected successfully')
+            self.log.info("Disconnected successfully")
             return True
         except Exception as err:
-            self.log.error('Disconnection error %s', err)
+            self.log.error("Disconnection error %s", err)
         return False

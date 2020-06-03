@@ -20,25 +20,25 @@
 
 from __future__ import with_statement
 
-from functools import partial
 import logging
 import threading
+from functools import partial
 
 import zookeeper
 
-ZK_ACL = {"perms": 0x1f,
-          "scheme": "world",
-          "id": "anyone"}
+ZK_ACL = {"perms": 0x1F, "scheme": "world", "id": "anyone"}
 
-zookeeper.set_log_stream(open('/dev/null', 'w'))
+zookeeper.set_log_stream(open("/dev/null", "w"))
 
 DEFAULT_ERRNO = -9999
 
 # JFYI
-LOG_LEVELS = {"DEBUG": zookeeper.LOG_LEVEL_DEBUG,
-              "INFO": zookeeper.LOG_LEVEL_INFO,
-              "WARN": zookeeper.LOG_LEVEL_WARN,
-              "ERROR": zookeeper.LOG_LEVEL_ERROR}
+LOG_LEVELS = {
+    "DEBUG": zookeeper.LOG_LEVEL_DEBUG,
+    "INFO": zookeeper.LOG_LEVEL_INFO,
+    "WARN": zookeeper.LOG_LEVEL_WARN,
+    "ERROR": zookeeper.LOG_LEVEL_ERROR,
+}
 
 
 class Null(object):
@@ -89,12 +89,13 @@ def handling_error(zkfunc, logger=Null()):
             errno = 0
         finally:
             return ret, errno
+
     return wrapper
 
 
 class ZKeeperClient(object):
     def __init__(self, **config):
-        logger_name = config.get('logger_name')
+        logger_name = config.get("logger_name")
         self.logger = logging.getLogger(logger_name) if logger_name else Null()
         self.zkhandle = None
         self.auth = None
@@ -106,10 +107,11 @@ class ZKeeperClient(object):
                 auth_scheme = auth_config["scheme"]
                 auth_data = auth_config["data"]
                 self.auth = (auth_scheme, auth_data)
-            zklogfile_path, zklog_level = config.get("ZookeeperLog",
-                                                     ("/dev/stderr", "WARN"))
-            self.connection_timeout = config['timeout']
-            self.zkhosts = ','.join(config['host'])
+            zklogfile_path, zklog_level = config.get(
+                "ZookeeperLog", ("/dev/stderr", "WARN")
+            )
+            self.connection_timeout = config["timeout"]
+            self.zkhosts = ",".join(config["host"])
         except KeyError as err:
             self.logger.exception("Missing configuration option: %s", err)
             raise
@@ -118,43 +120,41 @@ class ZKeeperClient(object):
             raise
 
         try:
-            _f = open(zklogfile_path, 'a')
+            _f = open(zklogfile_path, "a")
         except IOError as err:
-            self.logger.error("Unable to open logfile %s %s",
-                              zklogfile_path, err)
+            self.logger.error("Unable to open logfile %s %s", zklogfile_path, err)
         else:
             zookeeper.set_log_stream(_f)
-            zookeeper.set_debug_level(LOG_LEVELS.get(zklog_level.upper(),
-                                                     zookeeper.LOG_LEVEL_WARN))
+            zookeeper.set_debug_level(
+                LOG_LEVELS.get(zklog_level.upper(), zookeeper.LOG_LEVEL_WARN)
+            )
 
         self.connect()
         if zookeeper.state(self.zkhandle) == zookeeper.CONNECTED_STATE:
-            self.logger.info('Connected to Zookeeper successfully')
+            self.logger.info("Connected to Zookeeper successfully")
         else:
-            raise zookeeper.ZooKeeperException('Unable to connect '
-                                               'to Zookeeper')
+            raise zookeeper.ZooKeeperException("Unable to connect " "to Zookeeper")
 
         def on_auth_callback(state, result):
             with self.cv:
                 if result == zookeeper.AUTHFAILED:
                     self.logger.error(zookeeper.zerror(zookeeper.AUTHFAILED))
-                self.logger.info("on_auth: state %s, result %s",
-                                 state, result)
+                self.logger.info("on_auth: state %s, result %s", state, result)
                 self.cv.notify()
 
         if self.auth:
             self.logger.info("Auth using %s", self.auth[0])
             with self.cv:
-                res = zookeeper.add_auth(self.zkhandle, self.auth[0],
-                                         self.auth[1], on_auth_callback)
+                res = zookeeper.add_auth(
+                    self.zkhandle, self.auth[0], self.auth[1], on_auth_callback
+                )
                 if res != zookeeper.OK:
-                    self.logger.error("Invalid status %d",
-                                      zookeeper.zerror(res))
+                    self.logger.error("Invalid status %d", zookeeper.zerror(res))
                     raise Exception("Invalid status")
                 self.cv.wait(self.connection_timeout)
 
             if zookeeper.state(self.zkhandle) == zookeeper.AUTH_FAILED_STATE:
-                raise zookeeper.ZooKeeperException('authentication failed')
+                raise zookeeper.ZooKeeperException("authentication failed")
 
     def connect(self):
         def connect_watcher(handle, w_type, state, path):
@@ -170,33 +170,32 @@ class ZKeeperClient(object):
             try:
                 # zookeeper.init accepts timeout in ms
                 recv_timeout = int(self.connection_timeout * 1e3)
-                self.zkhandle = zookeeper.init(self.zkhosts, connect_watcher,
-                                               recv_timeout)
+                self.zkhandle = zookeeper.init(
+                    self.zkhosts, connect_watcher, recv_timeout
+                )
             except Exception as err:
                 self.logger.exception("Unable to init zookeeper: %s", err)
                 raise err
             else:
                 while True:
-                    self.logger.debug("Connecting to Zookeeper... Wait %d",
-                                      self.connection_timeout)
+                    self.logger.debug(
+                        "Connecting to Zookeeper... Wait %d", self.connection_timeout
+                    )
                     self.cv.wait(self.connection_timeout)
                     if zookeeper.state(self.zkhandle) != zookeeper.CONNECTING_STATE:
                         break
 
     @property
     def connected(self):
-        return self.zkhandle and\
-            zookeeper.state(self.zkhandle) == zookeeper.CONNECTED_STATE
+        return self.zkhandle is not None and zookeeper.state(self.zkhandle) == zookeeper.CONNECTED_STATE
 
     def disconnect(self):
         return zookeeper.close(self.zkhandle)
 
     def write(self, absname, value, typeofnode=0, acl=ZK_ACL):
-        return handling_error(zookeeper.create, self.logger)(self.zkhandle,
-                                                             absname,
-                                                             value,
-                                                             [acl],
-                                                             typeofnode)[1]
+        return handling_error(zookeeper.create, self.logger)(
+            self.zkhandle, absname, value, [acl], typeofnode
+        )[1]
 
     def read(self, absname):
         res = zookeeper.get(self.zkhandle, absname)
@@ -241,7 +240,7 @@ class ZKeeperClient(object):
             if rccallback is not None:
                 rccallback(rc)
 
-        res = zookeeper.aget(self.zkhandle, node,
-                             partial(watcher, self),
-                             partial(rc_handler, self))
+        res = zookeeper.aget(
+            self.zkhandle, node, partial(watcher, self), partial(rc_handler, self)
+        )
         return res == zookeeper.OK

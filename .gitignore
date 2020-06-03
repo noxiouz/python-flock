@@ -5,4 +5,6 @@
 reports/
 .coverage
 *.egg-info
+*.eggs
 build/
+.tox
