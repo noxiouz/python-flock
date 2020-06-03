@@ -19,24 +19,21 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
 import errno
-from functools import partial
 import json
 import logging
 import logging.handlers
 import optparse
+import os
 import shlex
-import subprocess
 import signal
+import subprocess
 import sys
 import time
+from functools import partial
 from threading import Condition
 
-from distributedflock import Zookeeper
-from distributedflock import Daemon
-from distributedflock import pdeathsig
-
+from distributedflock import Daemon, Zookeeper, pdeathsig
 
 DEFAULT_ZOOKEEPER_LOG_LEVEL = "WARN"
 DEFAULT_LOG_LEVEL = "INFO"
@@ -131,6 +128,31 @@ def notifier(cv):
         cv.notify()
 
 
+def sigterm_and_sigchld_handle(process, minlocktime, z, signum, frame):
+    time.sleep(minlocktime)
+    # TBD - split by two handlers for each signal
+    if signum == signal.SIGTERM:
+        logger.info("Stop work by SIGTERM")
+    elif signum == signal.SIGCHLD:
+        logger.info("Stop work by SIGCHLD")
+    else:
+        logger.info("Receive SIGNAL: %d", signum)
+    try:
+        z.destroy()
+    except Exception as err:
+        logger.debug(str(err))
+    finally:
+        returncode = kill_child(process)
+        if returncode is not None:
+            # Means that child has ended work and return some sode
+            # That's for SIGCHLD
+            sys.exit(returncode)
+        else:
+            # Means we kill our child manualy
+            # That's true for SIGTERM
+            sys.exit(1)
+
+
 # ToDo: accept options as the last argument
 def main(
     cmd_arg, zk_cfg, period=None, exitcode=0, sequence=0, pdeathsig_num=0, minlocktime=5
@@ -186,58 +208,36 @@ def main(
                 logger.debug("Unable to acquire lock. Do exit")
                 sys.exit(exitcode)
 
-    cv = Condition()
-
-    def sigterm_and_sigchld_handle(p, signum, frame):
-        time.sleep(minlocktime)
-        # TBD - split by two handlers for each signal
-        if signum == signal.SIGTERM:
-            logger.info("Stop work by SIGTERM")
-        elif signum == signal.SIGCHLD:
-            logger.info("Stop work by SIGCHLD")
-        else:
-            logger.info("Receive SIGNAL: %d", signum)
-        try:
-            z.destroy()
-        except Exception as err:
-            logger.debug(str(err))
-        finally:
-            returncode = kill_child(p)
-            if returncode is not None:
-                # Means that child has ended work and return some sode
-                # That's for SIGCHLD
-                sys.exit(returncode)
-            else:
-                # Means we kill our child manualy
-                # That's true for SIGTERM
-                sys.exit(1)
-
-    def watcher_cb():
-        with cv:
-            cv.notify()
-
-    if not z.set_async_check_lock(watcher_cb):
+    # attach watcher to the lock file
+    async_locker_cv = Condition()
+    async_check_lock_cb = partial(notifier, async_locker_cv)
+    if not z.set_async_check_lock(async_check_lock_cb):
         logger.error("Unable to attach async watcher for lock")
         sys.exit(1)
 
+    preexec_func = None
     if pdeathsig.support_pdeathsig():
-        pdeathsig_func = partial(pdeathsig.set_pdeathsig, pdeathsig_num)
-        p = start_child(cmd_arg, pdeathsig_func)
-    else:
-        p = start_child(cmd_arg)
-    signal.signal(signal.SIGTERM, partial(sigterm_and_sigchld_handle, p))
-    signal.signal(signal.SIGCHLD, partial(sigterm_and_sigchld_handle, p))
-    if p.poll() is not None:
+        preexec_func = partial(pdeathsig.set_pdeathsig, pdeathsig_num)
+
+    process = start_child(cmd_arg, preexec_func)
+    # capture process, minilocktime, and ZKlockServer
+    signal_handler = partial(sigterm_and_sigchld_handle, process, minlocktime, z)
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGCHLD, signal_handler)
+
+    # check if the child is still alive, as we attached SIGCHLD handler
+    if process.poll() is not None:
         logger.error("Child process exited")
         sys.exit(1)
 
+    # wait
     while True:
-        with cv:
-            cv.wait(100)
+        with async_locker_cv:
+            async_locker_cv.wait(100)
         if not z.check_lock():
             logger.warning("Lock lost")
             try:
-                kill_child(p)
+                kill_child(process)
                 z.destroy()
             except Exception:
                 pass
